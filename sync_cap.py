@@ -45,7 +45,7 @@ while True:
     op1 = Thread(target = Streaming(cap))
     op2 = Thread(target = File_cap, args=(ret,frame))
     vel = int(input())
-    if vel>60:
+    if vel > 60:
         op1.start()
         op2.start()
           
