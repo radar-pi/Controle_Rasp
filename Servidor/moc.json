@@ -1,0 +1,18 @@
+{
+  "Monitoramento": [
+    {
+      "Bateria": "20",
+      "Temperatura": "30",
+      "ID": "xFFF"
+    }
+  ],
+  "Multa": [
+    {
+      "Imagem1": "base64",
+      "Velocidade_do_Carro": "60",
+      "Data_da_Infração": "2019-05-25",
+      "Horário_da_Infração": "21:18:43",
+      "Imagem2": "base64"
+    }
+  ]
+}

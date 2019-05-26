@@ -48,7 +48,3 @@ while True:
     if vel > 60:
         op1.start()
         op2.start()
-          
-         
-
-    
