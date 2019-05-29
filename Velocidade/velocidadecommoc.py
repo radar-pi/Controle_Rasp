@@ -5,15 +5,16 @@ import json
 import random
 import requests
 import datetime
+import random
 
 url = 'http://178.128.73.29:8080/function/figlet'
-idradar = "39423"
+idradar = random.randrange(0,10)
 time = datetime.datetime.utcnow()	
-time = str(time.isoformat('T') + 'Z UTC-3')
+time = str(time.isoformat('T') + 'Z')
 
 
-vm = int(input("Velocidade medida: "))
-vr = 40
+vm = int(random.randrange(20,150))
+vr = int(random.randrange(40,80,20))
 
 if vm >= 27 and vm <= 107:
 	vc = vm - 7
@@ -26,55 +27,52 @@ elif vm >= 136 and vm <= 150:
 elif vm >= 151 and vm <= 161:
 	vc = vm - 11
 else:
-	vc = vm
+	vc = vminfracao
 
 
 vinte = int (vr + ((20*40)/100))	
 cinquenta = vr + ((50*40)/100)
 
 if  vc >= vr and vc <= vinte:
-	Infracao = "Media"
-	Penalidade = "Multa"
+	infracao = True
+	penalidade = 1
 
 elif vc > vinte and vc <= cinquenta:
-	Infracao = "Grave"
-	Penalidade = "Multa"
+	infracao = True
+	penalidade = 2
 elif vc > cinquenta:
-	Infracao = "Gravíssima"
-	Penalidade = "Multa"
+	infracao = True
+	penalidade = 3
 else:
-	Infracao = "Nenhuma"
-	Penalidade = "Nenhuma"
+	infracao = False
+	penalidade = 0
 
 print ("Velocidade medida:",vm,"km/h" )
 print ("Velocidade considerada:",vc,"km/h" )
 print ("Velocidade regulamentada:",vr,"km/h")
 print ("Limite 20%:",vinte,"km/h" )
 print ("Limite 50%:", cinquenta,"km/h") 
-print ("Infração:",Infracao)
-print ("Penalidade:", Penalidade )
+print ("Infração:",infracao)
+print ("penalidade:", penalidade )
 
 pacote = {
 "type": "dados_carro",
 	"payload": {
-		"id_radar":idradar,		
+		"id_radar":idradar,
+		"infracao":infracao,#boolean		
 		"imagem1": "base64",
 		"imagem2": "base64",
-		"velocidade_medida":vm,
-		"velocidade_considerada":vc,
-		"Velocidade_regulamentada":vr,
-		"Limite_20":vinte,
-		"Limite_50":cinquenta,
-		"Infracao":Infracao,
-		"Penalidade":Penalidade,
+		"velocidade_medida":vm,#float
+		"velocidade_considerada":vc,#float
+		"velocidade_regulamentada":vr,# int
+		"penalidade":penalidade,#enumeracao nenhuma ->0 media ->1 grave ->2 gravíssima -> 3
 		"date":time
-		
 	}
     }
 print(pacote)
 
 def save_file():
-	with open('data.json', 'w') as f:
+	with open('data.json', 'a') as f:
 		pacote["type"] = "dados_carro" 
 		json.dump(pacote, f ,indent=2)
 
@@ -85,10 +83,11 @@ def send_file():
 		r = requests.post(url, json.load(f))
 		r.raise_for_status()
 	return r.status_code 
+	
+for i in range(100):
+	save_file()
+#status_code = send_file()
 
-save_file()
-status_code = send_file()
 
-
-status_code
+#status_code
 
