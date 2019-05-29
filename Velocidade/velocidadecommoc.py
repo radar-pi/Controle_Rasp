@@ -34,18 +34,18 @@ vinte = int (vr + ((20*40)/100))
 cinquenta = vr + ((50*40)/100)
 
 if  vc >= vr and vc <= vinte:
-	infracao = True
-	penalidade = 1
+	infracao = 1
+	penalidade = True
 
 elif vc > vinte and vc <= cinquenta:
-	infracao = True
-	penalidade = 2
+	infracao = 2
+	penalidade = True
 elif vc > cinquenta:
-	infracao = True
-	penalidade = 3
+	infracao = 3
+	penalidade = True
 else:
-	infracao = False
-	penalidade = 0
+	infracao = 0
+	penalidade = False
 
 print ("Velocidade medida:",vm,"km/h" )
 print ("Velocidade considerada:",vc,"km/h" )
@@ -59,13 +59,13 @@ pacote = {
 "type": "dados_carro",
 	"payload": {
 		"id_radar":idradar,
-		"infracao":infracao,#boolean		
+		"infracao":infracao, #enumeracao  nenhuma ->0 media ->1 grave ->2 gravíssima ->3		
 		"imagem1": "base64",
 		"imagem2": "base64",
-		"velocidade_medida":vm,#float
-		"velocidade_considerada":vc,#float
+		"velocidade_medida":vm,#int
+		"velocidade_considerada":vc,#int
 		"velocidade_regulamentada":vr,# int
-		"penalidade":penalidade,#enumeracao nenhuma ->0 media ->1 grave ->2 gravíssima -> 3
+		"penalidade":penalidade,#boolean
 		"date":time
 	}
     }
