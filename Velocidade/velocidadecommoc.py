@@ -12,7 +12,7 @@ time = datetime.datetime.utcnow()
 time = str(time.isoformat('T') + 'Z UTC-3')
 
 
-vm = input("Velocidade medida: ")
+vm = int(input("Velocidade medida: "))
 vr = 40
 
 if vm >= 27 and vm <= 107:
@@ -46,13 +46,13 @@ else:
 	Infracao = "Nenhuma"
 	Penalidade = "Nenhuma"
 
-print "Velocidade medida:",vm,"km/h" 
-print "Velocidade considerada:",vc,"km/h" 
-print "Velocidade regulamentada:",vr,"km/h"
-print "Limite 20%:",vinte,"km/h" 
-print "Limite 50%:", cinquenta,"km/h" 
-print "Infração:",Infracao
-print "Penalidade:", Penalidade 
+print ("Velocidade medida:",vm,"km/h" )
+print ("Velocidade considerada:",vc,"km/h" )
+print ("Velocidade regulamentada:",vr,"km/h")
+print ("Limite 20%:",vinte,"km/h" )
+print ("Limite 50%:", cinquenta,"km/h") 
+print ("Infração:",Infracao)
+print ("Penalidade:", Penalidade )
 
 pacote = {
 "type": "dados_carro",
@@ -74,17 +74,17 @@ pacote = {
 print(pacote)
 
 def save_file():
-    with open('data.json', 'w') as f:
-        pacote["type"] = "dados_carro" 
-        json.dump(pacote, f ,indent=2)
+	with open('data.json', 'w') as f:
+		pacote["type"] = "dados_carro" 
+		json.dump(pacote, f ,indent=2)
 
 
 
 def send_file():   
 	with open('data.json', 'r') as f: 
-        	r = requests.post(url, json.load(f))
-        	r.raise_for_status()
-        return r.status_code 
+		r = requests.post(url, json.load(f))
+		r.raise_for_status()
+	return r.status_code 
 
 save_file()
 status_code = send_file()
