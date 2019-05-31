@@ -54,7 +54,7 @@ while True:
     if (c&1) == 0:
         radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
         print ("Retorna:", akpl_buf)
-	r = r+1
+        r = r+1
     else:
         print ("Sem conexão: 0")
     time.sleep(1)

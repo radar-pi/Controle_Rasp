@@ -53,26 +53,54 @@ def envio():
             print ("Sem conexão envio: 0")
         time.sleep(1)
  
+ 
+radio2 = NRF24(GPIO, spidev.SpiDev())
+radio2.begin(0, 17)
+
+radio2.setRetries(15,15)
+
+radio2.setPayloadSize(32)
+radio2.setChannel(0x60)
+radio2.setDataRate(NRF24.BR_2MBPS)
+radio2.setPALevel(NRF24.PA_MIN)
+
+radio2.setAutoAck(True)
+radio2.enableDynamicPayloads()
+radio2.enableAckPayload()
+
+radio2.openWritingPipe(pipes[0])
+radio2.openReadingPipe(1, pipes[1])
+
+radio2.startListening()
+radio2.stopListening()
+
+radio2.printDetails()
+
+radio2.startListening()
+
+c=1
+r=1
 def recebe():
-    c=1
-    r=1
     while True:
+	
         akpl_buf = [r]
         pipe = [0]
-        while not radio.available(pipe):
+        while not radio2.available(pipe):
             time.sleep(10000/1000000.0)
 
         recv_buffer = []
         radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
         print ("Recebido:", recv_buffer)
-        c = c + 10
+        c = c + 1
         if (c&1) == 0:
             radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-            print ("Retorna", akpl_buf)
-            r = r + 1
+            print ("Retorna:", akpl_buf)
+            r = r+1
         else:
-            print ("Sem conexão recebe: 0")
+            print ("Sem conexão: 0")
         time.sleep(1)
+ 
+
 
 
 while True:
