@@ -50,7 +50,7 @@ def envio():
             radio.read(pl_buffer, radio.getDynamicPayloadSize())
             print ("Retorno:", pl_buffer)
         else:
-            print ("Sem conexão: 0")
+            print ("Sem conexão envio: 0")
         time.sleep(1)
  
 def recebe():
@@ -71,16 +71,12 @@ def recebe():
             print ("Retorna", akpl_buf)
             r = r + 1
         else:
-            print ("Sem conexão: 0")
+            print ("Sem conexão recebe: 0")
         time.sleep(1)
 
-c=0
+
 while True:
-    c += 1
-    print ("Loop %d" % c),
-    if not (c % 3):    # only once per x loops
-        send()   # send something
-        time.sleep(0.01)
-    else:
+        envio()   # send something
+        time.sleep(1)
         recebe()    # has it arrived? (if so, maybe send return data)
-        time.sleep(2)   # 1 sec per loop
+        time.sleep(1)   # 1 sec per loop
