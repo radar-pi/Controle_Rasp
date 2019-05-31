@@ -45,8 +45,8 @@ while True:
     akpl_buf = [r]
     pipe = [0]
     while not radio2.available(pipe):
-        time.sleep(10000/1000000.0)
-
+        print ("Sem conexão: 0")
+        time.sleep(1)
     recv_buffer = []
     radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
     print ("Recebido:", recv_buffer)
@@ -55,6 +55,4 @@ while True:
         radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
         print ("Retorna:", akpl_buf)
         r = r+1
-    else:
-        print ("Sem conexão: 0")
     time.sleep(1)
