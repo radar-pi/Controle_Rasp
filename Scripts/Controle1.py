@@ -23,8 +23,9 @@ def proc_sinal():
 	c=0
 ####SINALIZAÇÃO####
 #Inicializanrf24_tx
-def inicionrf24tx():
-	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
+#Transmissão de Flag
+def flag_tx(deteccao):
+    pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
 	NRF24(GPIO, spidev.SpiDev())
     begin(0, 17)
@@ -43,8 +44,21 @@ def inicionrf24tx():
 	openReadingPipe(1, pipes[0])
 	printDetails()
 
-def inicionrf24rx():
-	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
+	buf = [deteccao]
+    write(buf)
+    if isAckPayloadAvailable():
+        pl_buffer=[]
+        read(pl_buffer, getDynamicPayloadSize())
+        print ("Enviado:", buf) 
+        print ("Retorno:", pl_buffer)
+        print("\n")
+    else:
+        print ("Sem conexão: 0")
+    time.sleep(0.5)
+
+#Recepção de Flag
+def flag_rx(rx):
+    	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
 	NRF24(GPIO, spidev.SpiDev())
 	begin(0, 17)
@@ -71,26 +85,7 @@ def inicionrf24rx():
 	startListening()
 	r_r = 0
 	r_c = 0
-	rx = [r_r,r_c]
-	return rx
-#Transmissão de Flag
-def flag_tx(deteccao):
-    buf = [deteccao]
-    write(buf)
-    if isAckPayloadAvailable():
-        pl_buffer=[]
-        read(pl_buffer, getDynamicPayloadSize())
-        print ("Enviado:", buf) 
-        print ("Retorno:", pl_buffer)
-        print("\n")
-    else:
-        print ("Sem conexão: 0")
-    time.sleep(0.5)
-
-#Recepção de Flag
-def flag_rx(rx):
-    rx[0] = r_r
-    rx[1] = r_c
+	
     akpl_buf = [r_r]
     pipe = [0]
     while not available(pipe):
