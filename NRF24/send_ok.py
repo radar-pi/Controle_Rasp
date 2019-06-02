@@ -35,21 +35,17 @@ radio.openWritingPipe(pipes[1])
 radio.openReadingPipe(1, pipes[0])
 radio.printDetails()
 
-
-#c=1
+c=0
 while True:
-  #  c = random.randint(0,1)
-    
     buf = [1]
-    
-     # send a packet to receiver
     radio.write(buf)
-    print ("Enviado:", buf),
-    # did it return with a payload?
     if radio.isAckPayloadAvailable():
         pl_buffer=[]
         radio.read(pl_buffer, radio.getDynamicPayloadSize())
+        print ("Enviado:", buf) 
         print ("Retorno:", pl_buffer)
+        print("\n")
     else:
         print ("Sem conexão: 0")
-    time.sleep(1)
+    time.sleep(0.5)
+
