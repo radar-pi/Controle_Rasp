@@ -39,6 +39,7 @@ radio2.printDetails()
 radio2.startListening()
 
 r=0
+c=0
 while True:
 
     akpl_buf = [r]
