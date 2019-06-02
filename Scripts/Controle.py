@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #Imports
-import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
+#import RPi.GPIO as GPIO
+#GPIO.setmode(GPIO.BCM)
 from lib_nrf24 import NRF24
 import time
 import spidev
@@ -10,7 +10,7 @@ import sys
 import cv2
 import os
 import base64
-import queue
+#import queue
 import threading
 from threading import Thread
 import datetime
@@ -19,7 +19,7 @@ import requests
 
 #Processamento de sinais
 def proc_sinal():
-
+	c=0
 ####SINALIZAÇÃO####
 #Inicializanrf24_tx
 def inicionrf24tx():
@@ -42,7 +42,7 @@ def inicionrf24tx():
 	radio.openReadingPipe(1, pipes[0])
 	radio.printDetails()
 
-def inicionrf24rx()
+def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
 	radio2 = NRF24(GPIO, spidev.SpiDev())
@@ -69,44 +69,53 @@ def inicionrf24rx()
 
 	radio2.startListening()
 
+	r_r = 0
+	r_c = 0
+	rx = [r_r, r_c]
+	return rx
+
+
 #Transmissão de Flag
-def flag_tx():
-    
-    buf = [1]
-    
-     # send a packet to receiver
+def flag_tx(deteccao):
+    buf = [deteccao]
     radio.write(buf)
-    print ("Enviado:", buf),
-    # did it return with a payload?
     if radio.isAckPayloadAvailable():
         pl_buffer=[]
         radio.read(pl_buffer, radio.getDynamicPayloadSize())
+        print ("Enviado:", buf) 
         print ("Retorno:", pl_buffer)
+        print("\n")
     else:
         print ("Sem conexão: 0")
+    time.sleep(0.5)
 
 #Recepção de Flag
-def flag_rx():
- akpl_buf = [r]
+def flag_rx(rx):
+	rx[0] = r_r
+	rx[1] = r_c
+	akpl_buf = [r_r]
     pipe = [0]
     while not radio2.available(pipe):
-        print ("Sem conexão: 0")
-        time.sleep(1)
+       r_c = r_c + 1
+       time.sleep(0.5)
+       if r_c > 2:
+          print("Sem conexão")
+          r_c = 0
+    r_c = 0
     recv_buffer = []
     radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
     print ("Recebido:", recv_buffer)
-    c = c + 1
-    if (c&1) == 0:
-        radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-        print ("Retorna:", akpl_buf)
-        r = r+1
+    radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+    print ("Retorna:", akpl_buf)
+    print ("\n")
+    r_r = r_r + 1
 
 #Controle do Relé
 def controle_rele():
-
+	c=0
 ###CONTROLE DE INFRAÇÃO###
 def cont_infracao():
-infracao1 = 0
+	infracao1 = 0
 #	vm = int(random.randrange(20,150))
 #	vr = int(random.randrange(40,80,20))
 
@@ -160,10 +169,10 @@ def inicio_camera():
 #Ativa captura
 def captura():
 	for i in range(2):
-	ret1, frame1 = cap.read()
-	ret.put(ret1)
-	frame.put(frame1)
-	time.sleep(0.5)
+		ret1, frame1 = cap.read()
+		ret.put(ret1)
+		frame.put(frame1)
+		time.sleep(0.5)
 
 def salva_captura():
     for i in range(2):
@@ -181,18 +190,17 @@ def conv_img():
 ###SERVIDOR###
 #Define o payload
 def pacote():
-	    pacote = []
-    i = 0
-    for i in range(1):
-        idradar = random.randrange(0,10)
-        time = datetime.datetime.utcnow()
-        time = str(time.isoformat('T') + 'Z')
-        with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Banco_de_Imagens/19_5_2019/16:1:31:543280.jpg", "rb") as file:
-        	img1 = base64.b64encode(file.read())
-	with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Processamento_de_Imagens/Teste2/limiar_20_sobelx.jpg", "rb") as file:
-        	img2 = base64.b64encode(file.read())
-
-        lista = controle_infra()
+	pacote = []
+	i = 0
+	for i in range(1):
+         idradar = random.randrange(0,10)
+         time = datetime.datetime.utcnow()
+         time = str(time.isoformat('T') + 'Z')
+         with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Banco_de_Imagens/19_5_2019/16:1:31:543280.jpg", "rb") as file:
+             img1 = base64.b64encode(file.read())
+         with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Processamento_de_Imagens/Teste2/limiar_20_sobelx.jpg", "rb") as file:
+             img2 = base64.b64encode(file.read())
+         lista = cont_infracao()
    	vm = lista[0]
 	vc = lista[1]
 	infracao = lista[2]
