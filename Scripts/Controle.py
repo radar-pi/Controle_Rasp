@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #Imports
-#import RPi.GPIO as GPIO
-#GPIO.setmode(GPIO.BCM)
+import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BCM)
 from lib_nrf24 import NRF24
 import time
 import spidev
@@ -16,6 +16,7 @@ from threading import Thread
 import datetime
 import json
 import requests
+
 
 #Processamento de sinais
 def proc_sinal():
@@ -68,13 +69,10 @@ def inicionrf24rx():
 	radio2.printDetails()
 
 	radio2.startListening()
-
 	r_r = 0
 	r_c = 0
-	rx = [r_r, r_c]
+	rx = [r_r,r_c]
 	return rx
-
-
 #Transmissão de Flag
 def flag_tx(deteccao):
     buf = [deteccao]
@@ -91,9 +89,9 @@ def flag_tx(deteccao):
 
 #Recepção de Flag
 def flag_rx(rx):
-	rx[0] = r_r
-	rx[1] = r_c
-	akpl_buf = [r_r]
+    rx[0] = r_r
+    rx[1] = r_c
+    akpl_buf = [r_r]
     pipe = [0]
     while not radio2.available(pipe):
        r_c = r_c + 1
@@ -109,6 +107,7 @@ def flag_rx(rx):
     print ("Retorna:", akpl_buf)
     print ("\n")
     r_r = r_r + 1
+    return recv_buffer
 
 #Controle do Relé
 def controle_rele():
@@ -200,8 +199,8 @@ def pacote():
              img1 = base64.b64encode(file.read())
          with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Processamento_de_Imagens/Teste2/limiar_20_sobelx.jpg", "rb") as file:
              img2 = base64.b64encode(file.read())
-         lista = cont_infracao()
-   	vm = lista[0]
+	lista = cont_infracao()
+	vm = lista[0]
 	vc = lista[1]
 	infracao = lista[2]
 	penalidade = lista[3]
@@ -223,9 +222,9 @@ def pacote():
         }
 	if (i==0):
 	    print ("Ok")
-	
-        pacote.append(base)
-        base = {}
+
+	pacote.append(base)
+	base = {}
 
 #Salva pacote em JSON
 def salva_arquivo():
@@ -239,3 +238,5 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
+r_c = 0
+r_r = 0
