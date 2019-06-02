@@ -1,9 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
-# Example program to send packets to the radio link
-#
-
 
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
