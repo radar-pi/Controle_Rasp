@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import cv2
+import numpy
 
 #Leitura da Imagem
-img = cv2.imread("16:2:57:27968.jpg", 0) 
+img = cv2.imread("16:2:57:27968.jpg") 
 
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+cv2.imwrite("escalacinza.jpg", gray)
 #Suavização da Imagem
 img_suav = cv2.GaussianBlur(img, (5,5), 0)
 cv2.imwrite("limiar_20_comsuv.jpg", img_suav)
@@ -28,9 +31,9 @@ cv2.imwrite("limiar_20_binarizado.jpg", img_bin)
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(17,13))
 morphDx = cv2.dilate(img_bin, kernel,1)
 contours1, hierarch = cv2.findContours(morphDx, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-contorn = cv2.drawContours(im	, contours, -1, (0,255,0), 3)
-cv2.imwrite("limiar_20_contorno.jpg", hierarch)
-cv2.imshow("limiar_20_contorno.jpg", hierarch)
+#contorn = cv2.drawContours(im	, contours, -1, (0,255,0), 3)
+#cv2.imwrite("limiar_20_contorno.jpg", hierarch)
+#cv2.imshow("limiar_20_contorno.jpg", hierarch)
 
 #laplacian = cv2.Laplacian(img_bin,cv2.CV_64F)
 #cv2.imwrite("laplacian_20.jpg", laplacian)
