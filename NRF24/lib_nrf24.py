@@ -371,11 +371,7 @@ class NRF24:
         # CE optional (at least in some circumstances, eg fixed PTX PRX roles, no powerdown)
         # CE seems to hold itself as (sufficiently) HIGH, but tie HIGH is safer!
         self.spidev.open(0, csn_pin)
-<<<<<<< HEAD
-	self.spidev.max_speed_hz = 4000000
-=======
         self.spidev.max_speed_hz = 4000000
->>>>>>> 36eed59d1d53e75a4152f372bcf25a656508ce1b
         self.ce_pin = ce_pin
 
         if ce_pin:
