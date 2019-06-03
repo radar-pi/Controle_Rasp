@@ -1,7 +1,8 @@
 import cv2
-from matplotlib import pyplot as plt
-import numpy as np
+import cProfile, pstats,io
 
+pr = cProfile.Profile()
+pr.enable()
 GH = 50 # horizontal gradient 
 GV = 50 # vertical gradient
 
@@ -17,21 +18,14 @@ path = "/home/filipesfreitas/Controle_Rasp/Camera/Banco_de_Imagens/19_5_2019/18:
 img_origin = cv2.imread(path)
 img_op = img_origin
 img_op = cv2.cvtColor(img_op, cv2.COLOR_BGR2GRAY)
-print(img_op.shape)
+#print(img_op.shape)
 
 img_op = cv2.blur(img_op,(5,5))
 # morphological top-hat
 img_op = cv2.morphologyEx(img_op, cv2.MORPH_TOPHAT, kernel_th)
 
-
-
 #Binarization with OTSU method
 ret2,thr = cv2.threshold(img_op,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-
-plt.imshow(thr, cmap = 'gray', interpolation = 'bicubic')
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.title("Binarization INV + OTSU")
-plt.show()
 
 #Opening --> closing
 opening = cv2.morphologyEx(thr, cv2.MORPH_OPEN, kernel_o)
@@ -41,7 +35,10 @@ IMG = cv2.Canny(op_cl,GH,GV)
 contours, hierarchy = cv2.findContours(op_cl, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_L1 )
 cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
 
-plt.imshow(img_origin)
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.title("Opening --> Closing")
-plt.show()
+
+pr.disable()
+s = io.StringIO()
+sortby = 'cumulative'
+ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+ps.print_stats()
+print(s.getvalue())
