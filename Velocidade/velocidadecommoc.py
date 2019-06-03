@@ -6,7 +6,7 @@ import random
 import requests
 import datetime
 import random
-
+import 
 url = 'http://178.128.73.29:8080/function/figlet'
 idradar = random.randrange(0,10)
 time = datetime.datetime.utcnow()	

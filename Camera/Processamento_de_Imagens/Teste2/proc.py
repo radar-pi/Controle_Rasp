@@ -16,7 +16,9 @@ cv2.imwrite("limiar_20_comsuv.jpg", img_suav)
 sobelx = cv2.Sobel(img_suav, cv2.CV_64F, 1, 0, ksize = 5)
 sobelx = cv2.normalize(sobelx, None, alpha = 0, beta = 255, norm_type = cv2.NORM_MINMAX, dtype= cv2.CV_8U)
 
+
 cv2.imwrite("limiar_20_sobelx.jpg", sobelx)
+
 
 edges = cv2.Canny(img_suav,250,300)
 
