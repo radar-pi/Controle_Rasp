@@ -20,14 +20,13 @@ if os.system('cd '+ path + data) == dirfailed:
     os.system('cd '+ path + data)
 
 cap = cv2.VideoCapture('rtsp://admin:radarpi2@10.0.0.100:554')    
-cap.set(680,460)
 
 def Streaming(cap):
     for i in range(2):
         ret1, frame1 = cap.read()
         ret.put(ret1)
         frame.put(frame1)
-  
+        
 
 def File_cap(ret,frame):
 
@@ -37,7 +36,7 @@ def File_cap(ret,frame):
         img1 = cv2.imwrite(path+data+hora+'.jpg', frame.get())
         print("Horário Infração: ", hora)
         print("Velocidade Infração: ", vel)
- 
+        time.sleep(100)
 
 frame = queue.Queue()
 ret = queue.Queue()
