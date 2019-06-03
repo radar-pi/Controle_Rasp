@@ -38,21 +38,24 @@ radio2.printDetails()
 
 radio2.startListening()
 
-c=1
-r=1
+r=0
+c=0
 while True:
-	
+
     akpl_buf = [r]
     pipe = [0]
     while not radio2.available(pipe):
-        print ("Sem conexão: 0")
-        time.sleep(1)
+       c = c + 1
+       time.sleep(0.5)
+       if c > 2:
+          print("Sem conexão")
+          c = 0
+    c = 0
     recv_buffer = []
     radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
     print ("Recebido:", recv_buffer)
-    c = c + 1
-    if (c&1) == 0:
-        radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-        print ("Retorna:", akpl_buf)
-        r = r+1
-    time.sleep(1)
+    radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+    print ("Retorna:", akpl_buf)
+    print ("\n")
+    r = r + 1
+
