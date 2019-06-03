@@ -25,9 +25,8 @@ def proc_sinal():
 #Inicializanrf24_tx
 def inicionrf24tx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
-
 	NRF24(GPIO, spidev.SpiDev())
-    begin(0, 17)
+	begin(0, 17)
 	setRetries(15,15)
 	setPayloadSize(32)
 	setChannel(0x60)
