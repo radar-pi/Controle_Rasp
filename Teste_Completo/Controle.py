@@ -26,49 +26,49 @@ def proc_sinal():
 #Inicializanrf24_tx
 def inicionrf24tx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
-	NRF24(GPIO, spidev.SpiDev())
-	begin(0, 17)
-	setRetries(15,15)
-	setPayloadSize(32)
-	setChannel(0x60)
+	radio = NRF24(GPIO, spidev.SpiDev())
+	radio.begin(0, 17)
+	radio.setRetries(15,15)
+	radio.setPayloadSize(32)
+	radio.setChannel(0x60)
 
-	setDataRate(NRF24.BR_2MBPS)
-	setPALevel(NRF24.PA_MIN)
-	setAutoAck(True)
-	enableDynamicPayloads()
-	enableAckPayload()
+	radio.setDataRate(NRF24.BR_2MBPS)
+	radio.setPALevel(NRF24.PA_MIN)
+	radio.setAutoAck(True)
+	radio.enableDynamicPayloads()
+	radio.enableAckPayload()
 
 
-	openWritingPipe(pipes[1])
-	openReadingPipe(1, pipes[0])
-	printDetails()
+	radio.openWritingPipe(pipes[1])
+	radio.openReadingPipe(1, pipes[0])
+	radio.printDetails()
 
 def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
-	NRF24(GPIO, spidev.SpiDev())
-	begin(0, 17)
+	radio2 = NRF24(GPIO, spidev.SpiDev())
+	radio2.begin(0, 17)
 
-	setRetries(15,15)
+	radio2.setRetries(15,15)
 
-	setPayloadSize(32)
-	setChannel(0x60)
-	setDataRate(NRF24.BR_2MBPS)
-	setPALevel(NRF24.PA_MIN)
+	radio2.setPayloadSize(32)
+	radio2.setChannel(0x60)
+	radio2.setDataRate(NRF24.BR_2MBPS)
+	radio2.setPALevel(NRF24.PA_MIN)
 
-	setAutoAck(True)
-	enableDynamicPayloads()
-	enableAckPayload()
+	radio2.setAutoAck(True)
+	radio2.enableDynamicPayloads()
+	radio2.enableAckPayload()
 
-	openWritingPipe(pipes[0])
-	openReadingPipe(1, pipes[1])
+	radio2.openWritingPipe(pipes[0])
+	radio2.openReadingPipe(1, pipes[1])
 
-	startListening()
-	stopListening()
+	radio2.startListening()
+	radio2.stopListening()
 
-	printDetails()
+	radio2.printDetails()
 
-	startListening()
+	radio2.startListening()
 
 #Transmissão de Flag
 def flag_tx(deteccao):
@@ -247,9 +247,8 @@ while True:
 	c_tx=0
 	r_rx=0
 	c_rx=0
+
 	
-inicionrf24tx()
-inicionrf24rx()
-
-
-
+	inicionrf24tx()
+	time.sleep(1)
+	inicionrf24rx()
