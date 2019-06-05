@@ -42,6 +42,7 @@ def inicionrf24tx():
 	radio.openWritingPipe(pipes[1])
 	radio.openReadingPipe(1, pipes[0])
 	radio.printDetails()
+	return radio
 
 def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
@@ -69,9 +70,10 @@ def inicionrf24rx():
 	radio2.printDetails()
 
 	radio2.startListening()
+	return radio2
 
 #Transmissão de Flag
-def flag_tx(c_tx, deteccao):
+def flag_tx(radio, c_tx, deteccao):
 	print("Começa flagtx")
 	c = c_tx
 	flag = [deteccao] 
@@ -90,10 +92,10 @@ def flag_tx(c_tx, deteccao):
 	time.sleep(0.5)
 
 #Recepção de Flag
-def flag_rx(c_tx,r_rx):
+def flag_rx(radio2, c_rx,r_rx):
 	print("Começa flagrx")
-	c = c_tx
-	r = r_tx
+	c = c_rx
+	r = r_rx
 	akpl_buf = [r]
 	pipe = [0]
 	while not radio2.available(pipe):
@@ -246,18 +248,20 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
+c_tx=0
+r_rx=0
+c_rx=0
+radio = inicionrf24tx()
+radio2 = inicionrf24rx()
+
 while True:
-	c_tx=0
-	r_rx=0
-	c_rx=0
-	deteccao = random.randint(0,1)
 	
-	inicionrf24tx()
-	inicionrf24rx()
+	deteccao = random.randint(0,1)
+	print("Detecção:", deteccao)
+	time.sleep(1)
+	t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, r_rx))
+	t_tx = threading.Thread(target=flag_tx, args=(radio, c_tx, deteccao))
+	t_rx.start()
 
-t_rx = threading.Thread(target=flag_rx, args=(c_rx, r_rx))
-t_tx = threading.Thread(target=flag_tx, args=(c_tx, deteccao))
-t_rx.start()
-
-if deteccao == 1:
-	t_tx.start()
+	if deteccao == 1:
+		t_tx.start()
