@@ -71,26 +71,29 @@ def inicionrf24rx():
 	radio2.startListening()
 
 #Transmissão de Flag
-def flag_tx(deteccao):
-	c=0
-	x = random.randrange(0,2)
-	buf = [x] 
+def flag_tx(c_tx, deteccao):
+	print("Começa flagtx")
+	c = c_tx
+	flag = [deteccao] 
 	inicio = time.time()
-	radio.write(buf)
+	radio.write(flag)
 	if radio.isAckPayloadAvailable():
-		pl_buffer=[]
-		radio.read(pl_buffer, radio.getDynamicPayloadSize())
+		mensagem=[]
+		radio.read(mensagem, radio.getDynamicPayloadSize())
 		fim = time.time()
-		print ("Enviado:", buf) 
-		print ("Retorno:", pl_buffer)
+		print ("Enviado:", flag) 
+		print ("Retorno:", mensagem)
 		print ("Tempo:", fim-inicio)
 		print("\n")
 	else:
 		print ("Sem conexão!")
+	time.sleep(0.5)
 
 #Recepção de Flag
-def flag_rx(c_tx):
+def flag_rx(c_tx,r_rx):
+	print("Começa flagrx")
 	c = c_tx
+	r = r_tx
 	akpl_buf = [r]
 	pipe = [0]
 	while not radio2.available(pipe):
@@ -112,7 +115,7 @@ def flag_rx(c_tx):
 	print ("Retorna:", akpl_buf)
 	print ("\n")
 	r = r + 1
-
+	time.sleep(0.5)
 
 #Controle do Relé
 def controle_rele():
@@ -247,8 +250,14 @@ while True:
 	c_tx=0
 	r_rx=0
 	c_rx=0
-
+	deteccao = random.randint(0,1)
 	
 	inicionrf24tx()
-	time.sleep(1)
 	inicionrf24rx()
+
+t_rx = threading.Thread(target=flag_rx, args=(c_rx, r_rx))
+t_tx = threading.Thread(target=flag_tx, args=(c_tx, deteccao))
+t_rx.start()
+
+if deteccao == 1:
+	t_tx.start()
