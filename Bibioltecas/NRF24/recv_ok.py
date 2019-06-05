@@ -19,7 +19,7 @@ radio2.begin(0, 17)
 
 radio2.setRetries(15,15)
 
-radio2.setPayloadSize(32)
+radio2.setPayloadSize(16)
 radio2.setChannel(0x60)
 radio2.setDataRate(NRF24.BR_2MBPS)
 radio2.setPALevel(NRF24.PA_MIN)
@@ -54,6 +54,11 @@ while True:
     recv_buffer = []
     radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
     print ("Recebido:", recv_buffer)
+    if recv_buffer == [1]:
+       sinalizacao = 1
+    else:
+       sinalizacao = 0
+    print("Sinalizacao:", sinalizacao)
     radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
     print ("Retorna:", akpl_buf)
     print ("\n")

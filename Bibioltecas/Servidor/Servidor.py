@@ -7,8 +7,10 @@ import requests
 import datetime
 import base64
 import time
+import os
 from controle_infracao import controle_infra
-for i in range(4):
+for i in range(5):
+	print('\n')
 	url = "http://178.128.73.29:8080/function/cows"
 	inicio = time.time()
 	def save_file(pacote):
@@ -32,9 +34,9 @@ for i in range(4):
 		func_geral = random.randrange(0,2)
 		time = datetime.datetime.utcnow()
 		time = str(time.isoformat('T') + 'Z')
-		with open("/home/rodrigo/Área de Trabalho/Servidor/21:45:1:884238.jpg", "rb") as file:
+		with open("21:45:1:884238.jpg", "rb") as file:
 			img1 = base64.b64encode(file.read())
-		with open("/home/rodrigo/Área de Trabalho/Servidor/21:45:1:884238.jpg", "rb") as file:
+		with open("21:45:1:884238.jpg", "rb") as file:
 			img2 = base64.b64encode(file.read())
 
 		lista = controle_infra()
@@ -68,12 +70,13 @@ for i in range(4):
 	    
 	    save_file(pacote)
 	    x = send_file(url)
-	    print("Código de Estado:", x)
+	    print('Codigo de Estado:', x)
 
 	 
 	#send não está sendo chamada.
 	main()
 	fim = time.time()
-	print(fim-inicio)
-
+	print('Tempo de envio:', fim-inicio)
+	tamanho = os.path.getsize ('data.json')
+	print('Tamanho do pacote:', tamanho)
 
