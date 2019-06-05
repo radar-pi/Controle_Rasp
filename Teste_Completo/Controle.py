@@ -10,12 +10,13 @@ import sys
 import cv2
 import os
 import base64
-#import queue
+import queue
 import threading
-from threading import Thread
 import datetime
 import json
 import requests
+
+
 
 
 #Processamento de sinais
@@ -68,45 +69,50 @@ def inicionrf24rx():
 	printDetails()
 
 	startListening()
-	r_r = 0
-	r_c = 0
-	rx = [r_r,r_c]
-	return rx
+
 #Transmissão de Flag
 def flag_tx(deteccao):
-    buf = [deteccao]
-    write(buf)
-    if isAckPayloadAvailable():
-        pl_buffer=[]
-        read(pl_buffer, getDynamicPayloadSize())
-        print ("Enviado:", buf) 
-        print ("Retorno:", pl_buffer)
-        print("\n")
-    else:
-        print ("Sem conexão: 0")
-    time.sleep(0.5)
+	c=0
+	x = random.randrange(0,2)
+	buf = [x] 
+	inicio = time.time()
+	radio.write(buf)
+	if radio.isAckPayloadAvailable():
+		pl_buffer=[]
+		radio.read(pl_buffer, radio.getDynamicPayloadSize())
+		fim = time.time()
+		print ("Enviado:", buf) 
+		print ("Retorno:", pl_buffer)
+		print ("Tempo:", fim-inicio)
+		print("\n")
+	else:
+		print ("Sem conexão!")
 
 #Recepção de Flag
-def flag_rx(rx):
-    rx[0] = r_r
-    rx[1] = r_c
-    akpl_buf = [r_r]
-    pipe = [0]
-    while not available(pipe):
-       r_c = r_c + 1
-       time.sleep(0.5)
-       if r_c > 2:
-          print("Sem conexão")
-          r_c = 0
-    r_c = 0
-    recv_buffer = []
-    read(recv_buffer, getDynamicPayloadSize())
-    print ("Recebido:", recv_buffer)
-    writeAckPayload(1, akpl_buf, len(akpl_buf))
-    print ("Retorna:", akpl_buf)
-    print ("\n")
-    r_r = r_r + 1
-    return recv_buffer
+def flag_rx(c_tx):
+	c = c_tx
+	akpl_buf = [r]
+	pipe = [0]
+	while not radio2.available(pipe):
+		c = c + 1
+		time.sleep(0.5)
+		if c > 2:
+		  print("Sem conexão")
+		  c = 0
+	c = 0
+	recv_buffer = []
+	radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
+	print ("Recebido:", recv_buffer)
+	if recv_buffer == [1]:
+		sinalizacao = 1
+	else:
+		sinalizacao = 0
+	print("Sinalizacao:", sinalizacao)
+	radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+	print ("Retorna:", akpl_buf)
+	print ("\n")
+	r = r + 1
+
 
 #Controle do Relé
 def controle_rele():
@@ -237,5 +243,13 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
-r_c = 0
-r_r = 0
+while True:
+	c_tx=0
+	r_rx=0
+	c_rx=0
+	
+inicionrf24tx()
+inicionrf24rx()
+
+
+
