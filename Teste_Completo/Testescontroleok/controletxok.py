@@ -44,7 +44,7 @@ def inicionrf24tx():
 	radio.openReadingPipe(1, pipes[0])
 	radio.printDetails()
 	return radio
-	
+
 def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
@@ -73,6 +73,7 @@ def inicionrf24rx():
 	radio2.startListening()
 	return radio2
 
+#Transmissão de Flag
 def flag_tx(radio):
 	while True:
    
@@ -91,25 +92,22 @@ def flag_tx(radio):
 		else:
 			print ("Sem conexão: 0")
 		time.sleep(0.5)
-		
-def flag_rx(radio2):
-	global c
-	global r
+
+#Recepção de Flag
+def flag_rx(radio2, c_rx,r_rx):
 	while True:
-	#print("Recebendo")
-	#c = c_rx
-	#r = r_rx
-	#r = r + 1
-		print (c,r)
+		print("Recebendo")
+		#print("Começa flagrx")
+		c = c_rx
+		r = r_rx
 		akpl_buf = [r]
 		pipe = [0]
 		while not radio2.available(pipe):
 			c = c + 1
 			if c > 2:
-			# print("Sem conexão!")
-				c = 0
-				time.sleep(0.1)
-			#print(pipe)
+			  #print("Sem conexão!")
+			  c = 0
+			  time.sleep(1)
 		c = 0
 		recv_buffer = []
 		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
@@ -123,8 +121,7 @@ def flag_rx(radio2):
 		print ("Retorna:", akpl_buf)
 		print ("\n")
 		r = r + 1
-	time.sleep(2)
-
+		time.sleep(0.2)
 
 #Controle do Relé
 def controle_rele():
@@ -166,11 +163,27 @@ def cont_infracao():
 		infracao = 0
 
 radio = inicionrf24tx()
-radio2 = inicionrf24rx()
+#radio2 = inicionrf24rx()
 
+
+#c_tx=0
+#while True:
+	
+	#deteccao = random.randint(0,1)
+	#deteccao  = input("Detec:")
+	
+	#print("Detecção:", deteccao)
+	#t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, r_rx), daemon = True)
 t_tx = threading.Thread(target=flag_tx(radio))
-t_rx = threading.Thread(target=flag_rx(radio2))
+
+
+	#if deteccao == 1:
 t_tx.start()
-t_rx.start()
+	#	t_rx.start()
+	#	i = i+1
+	#else:
+	#	t_rx.start()
 		
 time.sleep(2)
+
+
