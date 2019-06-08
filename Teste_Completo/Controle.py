@@ -15,7 +15,8 @@ import threading
 import datetime
 import json
 import requests
-
+c=0
+r=0
 
 
 
@@ -74,7 +75,8 @@ def inicionrf24rx():
 
 #Transmissão de Flag
 def flag_tx(radio, c_tx, deteccao):
-	print("Começa flagtx")
+	
+	print("Transmitindo")
 	c = c_tx
 	flag = [deteccao] 
 	inicio = time.time()
@@ -88,36 +90,44 @@ def flag_tx(radio, c_tx, deteccao):
 		print ("Tempo:", fim-inicio)
 		print("\n")
 	else:
+		
 		print ("Sem conexão!")
-	time.sleep(0.5)
+	time.sleep(1)
+	return r
 
 #Recepção de Flag
-def flag_rx(radio2, c_rx,r_rx):
-	print("Começa flagrx")
-	c = c_rx
-	r = r_rx
-	akpl_buf = [r]
-	pipe = [0]
-	while not radio2.available(pipe):
-		c = c + 1
-		time.sleep(0.5)
-		if c > 2:
-		  print("Sem conexão")
-		  c = 0
-	c = 0
-	recv_buffer = []
-	radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
-	print ("Recebido:", recv_buffer)
-	if recv_buffer == [1]:
-		sinalizacao = 1
-	else:
-		sinalizacao = 0
-	print("Sinalizacao:", sinalizacao)
-	radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-	print ("Retorna:", akpl_buf)
-	print ("\n")
-	r = r + 1
-	time.sleep(0.5)
+def flag_rx(radio2):
+	global c
+	global r
+	while True:
+	#print("Recebendo")
+	#c = c_rx
+	#r = r_rx
+	#r = r + 1
+		print (c,r)
+		akpl_buf = [r]
+		pipe = [0]
+		while not radio2.available(pipe):
+			c = c + 1
+			if c > 2:
+			# print("Sem conexão!")
+				c = 0
+				time.sleep(0.1)
+			#print(pipe)
+		c = 0
+		recv_buffer = []
+		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
+		print ("Recebido:", recv_buffer)
+		if recv_buffer == [1]:
+			sinalizacao = 1
+		else:
+			sinalizacao = 0
+		print("Sinalizacao:", sinalizacao)
+		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+		print ("Retorna:", akpl_buf)
+		print ("\n")
+		r = r + 1
+	time.sleep(2)
 
 #Controle do Relé
 def controle_rele():
@@ -248,20 +258,26 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
-c_tx=0
-r_rx=0
-c_rx=0
-radio = inicionrf24tx()
+#radio = inicionrf24tx()
 radio2 = inicionrf24rx()
+i = 0
+c_tx = 0
+#while True:
 
-while True:
 	
-	deteccao = random.randint(0,1)
-	print("Detecção:", deteccao)
-	time.sleep(1)
-	t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, r_rx))
-	t_tx = threading.Thread(target=flag_tx, args=(radio, c_tx, deteccao))
-	t_rx.start()
+	#deteccao = random.randint(0,1)
+	#print("Detecção:", deteccao)
+t_rx = threading.Thread(target=flag_rx(radio2))
+#t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, deteccao))
 
-	if deteccao == 1:
-		t_tx.start()
+
+#if deteccao == 1:
+t_rx.start()
+#	t_rx.start()
+#	i = i+1
+	#print(i)
+#else:
+#	t_rx.start()
+time.sleep(2)
+
+
