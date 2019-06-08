@@ -14,6 +14,8 @@ import threading
 import datetime
 #import json
 #import requests
+c=0
+r=0
 
 
 
@@ -73,57 +75,59 @@ def inicionrf24rx():
 	radio2.startListening()
 	return radio2
 
-def flag_tx(radio):
-	while True:
-   
-		x = random.randrange(0,2)
-		buf = [x] 
-		inicio = time.time()
-		radio.write(buf)
-		if radio.isAckPayloadAvailable():
-			pl_buffer=[]
-			radio.read(pl_buffer, radio.getDynamicPayloadSize())
-			fim = time.time()
-			print ("Enviado:", buf) 
-			print ("Retorno:", pl_buffer)
-			print ("Tempo:", fim-inicio)
-			print("\n")
-		else:
-			print ("Sem conexão: 0")
-		time.sleep(0.5)
-		
+def flag_tx(radio,x):
+#while True:
+	print("Envio")
+	buf = [x] 
+	inicio = time.time()
+	radio.write(buf)
+	print(buf)
+	if radio.isAckPayloadAvailable():
+		print("Oi")
+		pl_buffer=[]
+		radio.read(pl_buffer, radio.getDynamicPayloadSize())
+		fim = time.time()
+		print ("Enviado:", buf) 
+		print ("Retorno:", pl_buffer)
+		print ("Tempo:", fim-inicio)
+		print("\n")
+	else:
+		print ("Sem conexão: 0")
+	time.sleep(0.5)
+			
 def flag_rx(radio2):
 	global c
 	global r
-	while True:
-	#print("Recebendo")
+	
+#while True:
+	print("Recebendo")
 	#c = c_rx
 	#r = r_rx
 	#r = r + 1
-		print (c,r)
-		akpl_buf = [r]
-		pipe = [0]
-		while not radio2.available(pipe):
-			c = c + 1
-			if c > 2:
-			# print("Sem conexão!")
-				c = 0
-				time.sleep(0.1)
-			#print(pipe)
-		c = 0
-		recv_buffer = []
-		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
-		print ("Recebido:", recv_buffer)
-		if recv_buffer == [1]:
-			sinalizacao = 1
-		else:
-			sinalizacao = 0
-		print("Sinalizacao:", sinalizacao)
-		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-		print ("Retorna:", akpl_buf)
-		print ("\n")
-		r = r + 1
-	time.sleep(2)
+	print (c,r)
+	akpl_buf = [r]
+	pipe = [0]
+	while not radio2.available(pipe):
+		c = c + 1
+		if c > 2:
+		# print("Sem conexão!")
+			c = 0
+			time.sleep(0.1)
+		#print(pipe)
+	c = 0
+	recv_buffer = []
+	radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
+	print ("Recebido:", recv_buffer)
+	if recv_buffer == [1]:
+		sinalizacao = 1
+	else:
+		sinalizacao = 0
+	print("Sinalizacao:", sinalizacao)
+	radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+	print ("Retorna:", akpl_buf)
+	print ("\n")
+	r = r + 1
+	time.sleep(0.1)
 
 
 #Controle do Relé
@@ -168,9 +172,23 @@ def cont_infracao():
 radio = inicionrf24tx()
 radio2 = inicionrf24rx()
 
-t_tx = threading.Thread(target=flag_tx(radio))
-t_rx = threading.Thread(target=flag_rx(radio2))
-t_tx.start()
-t_rx.start()
-		
-time.sleep(2)
+while True:
+	x = random.randrange(0,2)
+	print("main")
+
+	t_rx = threading.Thread(target=flag_rx(radio2))
+	time.sleep(0.1)
+	t_tx = threading.Thread(target=flag_tx(radio,x))
+
+#	if x==1:
+
+	t_rx.start()
+	time.sleep(0.1)
+	t_tx.start()
+	
+	
+
+#	else:
+#		t_rx.start()
+
+	time.sleep(0.1)
