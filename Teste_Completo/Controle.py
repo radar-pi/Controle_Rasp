@@ -75,9 +75,10 @@ def inicionrf24rx():
 	radio2.startListening()
 	return radio2
 
-def flag_tx(radio,x):
+def flag_tx(radio):
 #while True:
 	print("Envio")
+	x = random.randrange(0,2)
 	buf = [x] 
 	inicio = time.time()
 	radio.write(buf)
@@ -96,25 +97,16 @@ def flag_tx(radio,x):
 	time.sleep(0.5)
 			
 def flag_rx(radio2):
-	global c
-	global r
-	
 #while True:
+	global c2
+	global r
 	print("Recebendo")
-	#c = c_rx
-	#r = r_rx
-	#r = r + 1
-	print (c,r)
 	akpl_buf = [r]
 	pipe = [0]
+	
 	while not radio2.available(pipe):
-		c = c + 1
-		if c > 2:
-		# print("Sem conexão!")
-			c = 0
-			time.sleep(0.1)
-		#print(pipe)
-	c = 0
+		return
+	
 	recv_buffer = []
 	radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
 	print ("Recebido:", recv_buffer)
@@ -123,11 +115,13 @@ def flag_rx(radio2):
 	else:
 		sinalizacao = 0
 	print("Sinalizacao:", sinalizacao)
-	radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-	print ("Retorna:", akpl_buf)
-	print ("\n")
-	r = r + 1
-	time.sleep(0.1)
+	c2 += 1
+	if (c2&1) == 0:
+		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+		print ("Retorna:", akpl_buf)
+		print ("\n")
+		r = r + 1
+
 
 
 #Controle do Relé
@@ -172,23 +166,33 @@ def cont_infracao():
 radio = inicionrf24tx()
 radio2 = inicionrf24rx()
 
-while True:
-	x = random.randrange(0,2)
-	print("main")
+#while True:
+#	
+#	print("main")
 
-	t_rx = threading.Thread(target=flag_rx(radio2))
-	time.sleep(0.1)
-	t_tx = threading.Thread(target=flag_tx(radio,x))
+#	t_rx = threading.Thread(target=flag_rx(radio2))
+#	time.sleep(0.1)
+#	t_tx = threading.Thread(target=flag_tx(radio,x))
 
 #	if x==1:
 
-	t_rx.start()
-	time.sleep(0.1)
-	t_tx.start()
+#	t_rx.start()
+#	time.sleep(0.1)
+#	t_tx.start()
 	
 	
 
 #	else:
 #		t_rx.start()
 
-	time.sleep(0.1)
+#	time.sleep(0.1)
+	
+while True:
+    c += 1
+    print ("Loop %d" % c),
+    if not (c % 3):    # only once per x loops
+        flag_tx(radio) #send something
+        time.sleep(0.01)
+    else:
+        flag_rx(radio2)    # has it arrived? (if so, maybe send return data)
+        time.sleep(2)   # 1 sec per loop
