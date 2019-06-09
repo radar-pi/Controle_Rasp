@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*- Imports
+# -*- coding: utf-8 -*-
+#Imports
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 from lib_nrf24 import NRF24
@@ -7,8 +8,8 @@ import spidev
 import random
 import sys
 #import cv2
-#import os
-#import base64
+import os
+import base64
 #import queue
 import threading
 import datetime
@@ -19,7 +20,6 @@ r=0
 
 
 
-
 #Processamento de sinais
 def proc_sinal():
 	c=0
@@ -27,12 +27,10 @@ def proc_sinal():
 #Inicializanrf24_tx
 def inicionrf24tx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
-
 	radio = NRF24(GPIO, spidev.SpiDev())
 	radio.begin(0, 17)
-	time.sleep(1)
 	radio.setRetries(15,15)
-	radio.setPayloadSize(16)
+	radio.setPayloadSize(32)
 	radio.setChannel(0x60)
 
 	radio.setDataRate(NRF24.BR_2MBPS)
@@ -46,7 +44,7 @@ def inicionrf24tx():
 	radio.openReadingPipe(1, pipes[0])
 	radio.printDetails()
 	return radio
-	
+
 def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
@@ -75,54 +73,56 @@ def inicionrf24rx():
 	radio2.startListening()
 	return radio2
 
+#Transmissão de Flag
 def flag_tx(radio):
-#while True:
-	print("Envio")
-	x = random.randrange(0,2)
-	buf = [x] 
-	inicio = time.time()
-	radio.write(buf)
-	print(buf)
-	if radio.isAckPayloadAvailable():
-		print("Oi")
-		pl_buffer=[]
-		radio.read(pl_buffer, radio.getDynamicPayloadSize())
-		fim = time.time()
-		print ("Enviado:", buf) 
-		print ("Retorno:", pl_buffer)
-		print ("Tempo:", fim-inicio)
-		print("\n")
-	else:
-		print ("Sem conexão: 0")
-	time.sleep(0.5)
-			
+	 while True: 
+		x = random.randrange(0,2)
+		buf = [x] 
+		inicio = time.time()
+		radio.stopListening()
+		radio.write(buf)
+		if radio.isAckPayloadAvailable():
+			pl_buffer=[]
+			radio.read(pl_buffer, radio.getDynamicPayloadSize())
+			fim = time.time()
+			print ("Enviado:", buf) 
+			print ("Retorno:", pl_buffer)
+			print ("Tempo:", fim-inicio)
+			print("\n")
+		else:
+			print ("Sem conexão: 0")
+			radio.startListening()
+		radio.startListening()	
+		time.sleep(0.5)
+
+#Recepção de Flag
 def flag_rx(radio2):
-#while True:
-	global c2
+	global c
 	global r
-	print("Recebendo")
-	akpl_buf = [r]
-	pipe = [0]
-	
-	while not radio2.available(pipe):
-		return
-	
-	recv_buffer = []
-	radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
-	print ("Recebido:", recv_buffer)
-	if recv_buffer == [1]:
-		sinalizacao = 1
-	else:
-		sinalizacao = 0
-	print("Sinalizacao:", sinalizacao)
-	c2 += 1
-	if (c2&1) == 0:
+	while True:
+	#print("Recebendo")
+	#c = c_rx
+	#r = r_rx
+	#r = r + 1
+		print (c,r)
+		akpl_buf = [r]
+		pipe = [0]
+		while not radio2.available(pipe):
+			return
+		c = 0
+		recv_buffer = []
+		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
+		print ("Recebido:", recv_buffer)
+		if recv_buffer == [1]:
+			sinalizacao = 1
+		else:
+			sinalizacao = 0
+		print("Sinalizacao:", sinalizacao)
 		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
 		print ("Retorna:", akpl_buf)
 		print ("\n")
 		r = r + 1
-
-
+	time.sleep(2)
 
 #Controle do Relé
 def controle_rele():
@@ -163,36 +163,108 @@ def cont_infracao():
 	else:
 		infracao = 0
 
+###CÂMERA###
+#Inicializa a câmera
+def inicio_camera():
+	## Inicialização do caminho
+	path = 'Banco_de_Imagens/'
+	now = datetime.now()
+	data = str(now.day)+'_'+str(now.month)+'_'+str(now.year)+'/'
+	dirfailed = 512# caso nao consiga criar diretorio
+
+	## Diretório
+	if os.system('cd '+ path + data) == dirfailed:
+		os.system('mkdir '+ path + data)
+		os.system('cd '+ path + data)
+
+	cap = cv2.VideoCapture('rtsp://admin:radarpi2@10.0.0.100:554')    
+	cap.set(1080)
+	cap.set(720)
+#Ativa captura
+def captura():
+	for i in range(2):
+		ret1, frame1 = cap.read()
+		ret.put(ret1)
+		frame.put(frame1)
+		time.sleep(0.5)
+
+def salva_captura():
+    for i in range(2):
+        now = datetime.now()
+        hora = str(now.hour)+':'+str(now.minute)+':'+str(now.second)+':'+str(now.microsecond)
+        img1 = cv2.imwrite(path+data+hora+'.jpg', frame.get())
+        print("Horário Infração: ", hora)
+        print("Velocidade Infração: ", vel)
+        time.sleep(0.5)
+#Conversão img para base 64
+def conv_img():
+	img1 = base64.b64encode(file.read())
+	img2 = base64.b64encode(file.read())
+
+###SERVIDOR###
+#Define o payload
+def pacote():
+	pacote = []
+	i = 0
+	for i in range(1):
+         idradar = random.randrange(0,10)
+         time = datetime.datetime.utcnow()
+         time = str(time.isoformat('T') + 'Z')
+         with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Banco_de_Imagens/19_5_2019/16:1:31:543280.jpg", "rb") as file:
+             img1 = base64.b64encode(file.read())
+         with open("/home/rodrigo/Documentos/Controle_Rasp/Camera/Processamento_de_Imagens/Teste2/limiar_20_sobelx.jpg", "rb") as file:
+             img2 = base64.b64encode(file.read())
+	lista = cont_infracao()
+	vm = lista[0]
+	vc = lista[1]
+	infracao = lista[2]
+	penalidade = lista[3]
+	vr = lista[4]
+	
+	base = {
+            "type": "dados_carro",
+            "payload": {
+                "id_radar":idradar,
+                "infracao":infracao, 		
+                "imagem1": img1,
+                "imagem2": img2,
+                "velocidade_medida":vm,
+                "velocidade_considerada":vc,
+                "velocidade_regulamentada":vr,
+                "penalidade":penalidade,
+                "date":time
+            }
+        }
+	if (i==0):
+	    print ("Ok")
+
+	pacote.append(base)
+	base = {}
+
+#Salva pacote em JSON
+def salva_arquivo():
+    with open('data.json', 'a') as f:
+        json.dump(pacote, f ,indent=2)
+
+#Envia para servidor
+def envia_arquivo():
+	with open('data.json', 'r') as f: 
+		r = requests.post(url, json.load(f))
+		r.raise_for_status()
+	return r.status_code 
+
 radio = inicionrf24tx()
 radio2 = inicionrf24rx()
+t_rx = threading.Thread(target=flag_rx(radio2))
+t_tx = threading.Thread(target=flag_tx(radio))
 
-#while True:
-#	
-#	print("main")
+#deteccao = random.randint(0,1)
+#print("Detecção:", deteccao)
 
-#	t_rx = threading.Thread(target=flag_rx(radio2))
-#	time.sleep(0.1)
-#	t_tx = threading.Thread(target=flag_tx(radio,x))
+t_tx.start()
+time.sleep(1)
+t_rx.start()
 
-#	if x==1:
+time.sleep(2)
 
-#	t_rx.start()
-#	time.sleep(0.1)
-#	t_tx.start()
-	
-	
 
-#	else:
-#		t_rx.start()
-
-#	time.sleep(0.1)
-	
-while True:
-    c += 1
-    print ("Loop %d" % c),
-    if not (c % 3):    # only once per x loops
-        flag_tx(radio) #send something
-        time.sleep(0.01)
-    else:
-        flag_rx(radio2)    # has it arrived? (if so, maybe send return data)
-        time.sleep(2)   # 1 sec per loop
