@@ -94,6 +94,7 @@ def flag_tx(radio):
 			radio.startListening()
 		radio.startListening()	
 		time.sleep(0.5)
+		
 
 #Recepção de Flag
 def flag_rx(radio2):
@@ -104,6 +105,7 @@ def flag_rx(radio2):
 	#c = c_rx
 	#r = r_rx
 	#r = r + 1
+		radio2.startListening()
 		print (c,r)
 		akpl_buf = [r]
 		pipe = [0]
@@ -123,6 +125,7 @@ def flag_rx(radio2):
 		print ("\n")
 		r = r + 1
 	time.sleep(2)
+		
 
 #Controle do Relé
 def controle_rele():
@@ -265,6 +268,6 @@ t_tx.start()
 time.sleep(1)
 t_rx.start()
 
-time.sleep(2)
+#time.sleep(2)
 
 

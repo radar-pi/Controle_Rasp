@@ -7,18 +7,18 @@ import time
 import spidev
 import random
 import sys
-import cv2
+#import cv2
 import os
 import base64
-import queue
+#import queue
 import threading
 import datetime
-import json
-import requests
+#import json
+#import requests
 c=0
 r=0
-
-
+x=0
+j=0
 
 #Processamento de sinais
 def proc_sinal():
@@ -74,26 +74,28 @@ def inicionrf24rx():
 	return radio2
 
 #Transmissão de Flag
-def flag_tx(radio, c_tx, deteccao):
-	
-	print("Transmitindo")
-	c = c_tx
-	flag = [deteccao] 
-	inicio = time.time()
-	radio.write(flag)
-	if radio.isAckPayloadAvailable():
-		mensagem=[]
-		radio.read(mensagem, radio.getDynamicPayloadSize())
-		fim = time.time()
-		print ("Enviado:", flag) 
-		print ("Retorno:", mensagem)
-		print ("Tempo:", fim-inicio)
-		print("\n")
-	else:
-		
-		print ("Sem conexão!")
-	time.sleep(1)
-	return r
+def flag_tx(radio,x):
+	 while True: 
+		buf = [x] 
+		inicio = time.time()
+		radio.stopListening()
+		radio.write(buf)
+		#j+=1
+		#print(j)
+		if radio.isAckPayloadAvailable():
+			pl_buffer=[]
+			radio.read(pl_buffer, radio.getDynamicPayloadSize())
+			fim = time.time()
+			print ("Enviado:", buf) 
+			print ("Retorno:", pl_buffer)
+			print ("Tempo:", fim-inicio)
+			print("\n")
+		else:
+			#print ("Sem conexão: 0")
+			radio.startListening()
+		radio.startListening()	
+		time.sleep(0.5)
+		return
 
 #Recepção de Flag
 def flag_rx(radio2):
@@ -104,16 +106,12 @@ def flag_rx(radio2):
 	#c = c_rx
 	#r = r_rx
 	#r = r + 1
+		radio2.startListening()
 		print (c,r)
 		akpl_buf = [r]
 		pipe = [0]
 		while not radio2.available(pipe):
-			c = c + 1
-			if c > 2:
-			# print("Sem conexão!")
-				c = 0
-				time.sleep(0.1)
-			#print(pipe)
+			return
 		c = 0
 		recv_buffer = []
 		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
@@ -127,7 +125,10 @@ def flag_rx(radio2):
 		print ("Retorna:", akpl_buf)
 		print ("\n")
 		r = r + 1
-	time.sleep(2)
+		print(r)
+		time.sleep(0.24)
+		return
+		
 
 #Controle do Relé
 def controle_rele():
@@ -258,26 +259,15 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
-#radio = inicionrf24tx()
+radio = inicionrf24tx()
 radio2 = inicionrf24rx()
-i = 0
-c_tx = 0
-#while True:
-
-	
-	#deteccao = random.randint(0,1)
-	#print("Detecção:", deteccao)
 t_rx = threading.Thread(target=flag_rx(radio2))
-#t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, deteccao))
+t_tx = threading.Thread(target=flag_tx(radio,x))
 
-
-#if deteccao == 1:
-t_rx.start()
-#	t_rx.start()
-#	i = i+1
-	#print(i)
-#else:
-#	t_rx.start()
-time.sleep(2)
-
+while True:
+	x = random.randrange(0,2)
+	if not (x==1):
+		flag_rx(radio2)
+	else:
+		flag_tx(radio,x)
 
