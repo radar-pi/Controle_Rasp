@@ -94,7 +94,7 @@ def flag_tx(radio,x):
 			#print ("Sem conexão: 0")
 			radio.startListening()
 		radio.startListening()	
-		time.sleep(0.5)
+		time.sleep(1)
 		return
 
 #Recepção de Flag
@@ -102,12 +102,7 @@ def flag_rx(radio2):
 	global c
 	global r
 	while True:
-	#print("Recebendo")
-	#c = c_rx
-	#r = r_rx
-	#r = r + 1
 		radio2.startListening()
-		print (c,r)
 		akpl_buf = [r]
 		pipe = [0]
 		while not radio2.available(pipe):
@@ -266,6 +261,7 @@ t_tx = threading.Thread(target=flag_tx(radio,x))
 
 while True:
 	x = random.randrange(0,2)
+	#print(x)
 	if not (x==1):
 		flag_rx(radio2)
 	else:
