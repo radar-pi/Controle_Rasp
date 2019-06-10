@@ -94,7 +94,7 @@ def flag_tx(radio,x):
 			#print ("Sem conexão: 0")
 			radio.startListening()
 		radio.startListening()	
-		time.sleep(1)
+		time.sleep(0.24)
 		return
 
 #Recepção de Flag
