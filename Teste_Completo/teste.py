@@ -264,6 +264,8 @@ while True:
 	#print(x)
 	if not (x==1):
 		flag_rx(radio2)
+		
 	else:
 		flag_tx(radio,x)
+		flag_rx(radio2)
 
