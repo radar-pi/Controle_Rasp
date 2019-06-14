@@ -48,7 +48,7 @@ class Sinalizacao(object):
     def inicionrf24tx(self): # Inicializa transmissão do módulo NRF24;
         pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
         radio = NRF24(GPIO, spidev.SpiDev())
-        radio.begin(0, 17)
+        radio.begin(0, 22)
         radio.setRetries(15,15)
         radio.setPayloadSize(32)
         radio.setChannel(0x60)
@@ -68,7 +68,7 @@ class Sinalizacao(object):
         pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
         radio2 = NRF24(GPIO, spidev.SpiDev())
-        radio2.begin(0, 17)
+        radio2.begin(0, 22)
 
         radio2.setRetries(15,15)
 
@@ -245,14 +245,14 @@ class Servidor(object):
         self.id_radar = 2019
         self.time = datetime.datetime.utcnow()
         self.time = str(time.isoformat('T') + 'Z')
-    def dados(self,lista)
+    def dados(self,lista):
         vm = lista[0]
         vc = lista[1]
         vr = lista[2]
         infracao = lista[3]
         penalidade = lista[4]
         img = lista [5]
-
+	pacote = []
         base = {
             "type": "dados_carro",
             "payload": {
@@ -265,14 +265,14 @@ class Servidor(object):
                 "velocidade_regulamentada":vr,
                 "penalidade":penalidade,
                 "date":self.time
-            }
-
+		}
+	    }
         with open('data.json', 'a') as f:
             json.dump(pacote, f ,indent=2)
         with open('data.json', 'r') as f: 
-		    r = requests.post(url, json.load(f))
-		    r.raise_for_status()
-	    return r.status_code 
+	    r = requests.post(url, json.load(f))
+	    r.raise_for_status()
+	return r.status_code 
 
 def main():
  
