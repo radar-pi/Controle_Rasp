@@ -15,11 +15,12 @@ import threading
 import datetime
 #import json
 #import requests
+rele=14
 c=0
 r=0
 x=0
 j=0
-
+parar = 0
 #Processamento de sinais
 def proc_sinal():
 	c=0
@@ -73,21 +74,21 @@ def inicionrf24rx():
 	radio2.startListening()
 	return radio2
 
-#Transmissão de Flag
-def flag_tx(radio,x):
+#Transmissão de mensagem
+def mensagem_tx(radio,x):
 	 while True: 
-		buf = [x] 
+		flag = [x] 
 		inicio = time.time()
 		radio.stopListening()
-		radio.write(buf)
+		radio.write(flag)
 		#j+=1
 		#print(j)
 		if radio.isAckPayloadAvailable():
-			pl_buffer=[]
-			radio.read(pl_buffer, radio.getDynamicPayloadSize())
+			mensagem=[]
+			radio.read(mensagem, radio.getDynamicPayloadSize())
 			fim = time.time()
-			print ("Enviado:", buf) 
-			print ("Retorno:", pl_buffer)
+			print ("Enviado:", flag) 
+			print ("Retorno:", mensagem)
 			print ("Tempo:", fim-inicio)
 			print("\n")
 		else:
@@ -97,27 +98,35 @@ def flag_tx(radio,x):
 		time.sleep(0.24)
 		return
 
-#Recepção de Flag
-def flag_rx(radio2):
+#Recepção de mensagem
+def mensagem_rx(radio2):
 	global c
 	global r
 	while True:
 		radio2.startListening()
-		akpl_buf = [r]
+		contador = [r]
 		pipe = [0]
 		while not radio2.available(pipe):
 			return
 		c = 0
-		recv_buffer = []
-		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
-		print ("Recebido:", recv_buffer)
-		if recv_buffer == [1]:
+		recebido = []
+		radio2.read(recebido, radio2.getDynamicPayloadSize())
+		print ('Recebido:', recebido)
+		if recebido == [1]:
+			print("Carro detectado!")
 			sinalizacao = 1
+			sinaliza = threading.Thread(target=controle_rele(sinalizacao))
+			sinaliza.start()
+						
 		else:
 			sinalizacao = 0
-		print("Sinalizacao:", sinalizacao)
-		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
-		print ("Retorna:", akpl_buf)
+			GPIO.output(rele, GPIO.LOW)
+			time.sleep(2)
+			GPIO.cleanup(14)
+	
+		#print("Sinalizacao:" sinalizacao)
+		radio2.writeAckPayload(1, contador, len(contador))
+		print ("Retorna:", contador)
 		print ("\n")
 		r = r + 1
 		print(r)
@@ -126,8 +135,24 @@ def flag_rx(radio2):
 		
 
 #Controle do Relé
-def controle_rele():
-	c=0
+def controle_rele(sinalizacao):
+	rele = 14
+	global parar
+	while sinalizacao == 1:
+		rele = 14
+		GPIO.setwarnings(False)
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(rele, GPIO.OUT)
+		GPIO.output(rele, GPIO.HIGH)
+		#print("Alto")
+		return
+
+
+	
+
+	
+	
+	
 ###CONTROLE DE INFRAÇÃO###
 def cont_infracao():
 	infracao1 = 0
@@ -256,16 +281,12 @@ def envia_arquivo():
 
 radio = inicionrf24tx()
 radio2 = inicionrf24rx()
-t_rx = threading.Thread(target=flag_rx(radio2))
-t_tx = threading.Thread(target=flag_tx(radio,x))
-
 while True:
 	x = random.randrange(0,2)
 	#print(x)
 	if not (x==1):
-		flag_rx(radio2)
+		mensagem_rx(radio2)
 		
 	else:
-		flag_tx(radio,x)
-		flag_rx(radio2)
-
+		mensagem_tx(radio,x)
+		mensagem_rx(radio2)
