@@ -32,7 +32,7 @@ class Processamentodesinais(object):
                     vm = random.randint(58,62)
             else:
                     vm = 0
-	    print (deteccao, vm)
+	    #print (deteccao, vm)
             d.put(deteccao)
             v.put(vm)
 	    time.sleep(0.5)   
@@ -107,7 +107,7 @@ class Sinalizacao(object):
 		return
             
     
-    def flag_rx(self, r): #Recepção de Flag
+    def flag_rx(self, s, r): #Recepção de Flag
         while True:
 	    print 'recebe'
             self.radio2.startListening()
@@ -121,11 +121,15 @@ class Sinalizacao(object):
             if recebido == [1]:
                 print("Carro detectado!")
                 sinalizacao = 1
-                               
+		r.put(sinalizacao)
+		sinaliza = threading.Thread(target= s.controle_rele(sinalizacao))
+		sinaliza.setDaemon(True)
+		sinaliza.start()
             else:
-                sinalizacao = 0
-                
-            r.put(sinalizacao)       
+		sinalizacao = 0
+		time.sleep(2)
+		GPIO.cleanup(14)
+  
             self.radio2.writeAckPayload(1, contador, len(contador))
             print ("Retorna:", contador)
             print ("\n")
@@ -134,32 +138,28 @@ class Sinalizacao(object):
             time.sleep(0.24)
 	    return
 	    
-    def controle_rele(self,r):  #Controle do Relé
-        while True:
-	    sinalizacao = r.get()
-	    if sinalizacao == 1:
+    def controle_rele(self,sinalizacao):  #Controle do Relé
+        while sinalizacao == 1:
 		GPIO.setwarnings(False)
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(self.rele, GPIO.OUT)
 		GPIO.output(self.rele, GPIO.HIGH)
-		sinalizacao = r.get()
-	    else:
-		time.sleep(2)
-		GPIO.cleanup(14)
-	return
+		#print("Alto")
+		return
             
     def tx_rx(self, d, r, s): #Envia e recebe a flag ao mesmo tempo!
         while True:
 
 	    deteccao = d.get()
 	    if  deteccao != 1:
-		s.flag_rx(r)
+		s.flag_rx(s,r)
 		
 	    else:
 		s.flag_tx(deteccao)
 		time.sleep(0.24)
-		s.flag_rx(r)
-		
+		s.flag_rx(s,r)
+		time.sleep(0.6)
+
     def leitura(self,d,v):
         while True:
             print (d.get())
@@ -353,5 +353,4 @@ if __name__ == '__main__':
     
     #Abertura da função principal
     main()
-
 
