@@ -30,20 +30,31 @@ class Processamentodesinais(object):
             deteccao = random.randrange(0,2)
             if deteccao == 1:
                     vm = random.randint(58,62)
+		    d.put(deteccao)
+		    v.put(vm)
+		    time.sleep(0.2)
+		    
             else:
                     vm = 0
-	    #print (deteccao, vm)
-            d.put(deteccao)
-            v.put(vm)
+		    d.put(deteccao)
+		    v.put(vm)
+		    time.sleep(1)
+	    print (deteccao, vm)
 	    time.sleep(0.5)   
-#retorna detecção e velocidade;
+	    #retorna detecção e velocidade;
     
 class Sinalizacao(object):
     def __init__(self):
             print 'Inicio Sinalização'
             global contador
 	    self.h = 0
-            self.rele = 14
+            
+	    self.rele = 14
+	    GPIO.setwarnings(False)
+	    GPIO.setmode(GPIO.BCM)
+	    GPIO.setup(self.rele, GPIO.OUT)
+	    GPIO.cleanup(self.rele)
+	    
 	    pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 	    self.radio = NRF24(GPIO, spidev.SpiDev())
 	    self.radio.begin(0, 22)
@@ -88,10 +99,10 @@ class Sinalizacao(object):
         
 
 
-    def flag_tx(self,deteccao): #Transmissão de Flag
+    def flag_tx(self): #Transmissão de Flag
 	    while True: 
 		print 'transmite'
-		flag = [deteccao] 
+		flag = [1] 
 		self.radio.stopListening()
 		self.radio.write(flag)
 		if self.radio.isAckPayloadAvailable():
@@ -103,7 +114,6 @@ class Sinalizacao(object):
 		    #print ("Sem conexão: 0")
 		    self.radio.startListening()
 		self.radio.startListening()	
-		time.sleep(0.24)
 		return
             
     
@@ -121,52 +131,45 @@ class Sinalizacao(object):
             if recebido == [1]:
                 print("Carro detectado!")
                 sinalizacao = 1
-		r.put(sinalizacao)
-		sinaliza = threading.Thread(target= s.controle_rele(sinalizacao))
-		sinaliza.setDaemon(True)
-		sinaliza.start()
             else:
 		sinalizacao = 0
-		time.sleep(2)
-		GPIO.cleanup(14)
-  
-            self.radio2.writeAckPayload(1, contador, len(contador))
+	    r.put(sinalizacao)
+	    self.radio2.writeAckPayload(1, contador, len(contador))
             print ("Retorna:", contador)
             print ("\n")
             self.h = self.h + 1
-            print(contador)
-            time.sleep(0.24)
 	    return
+            
 	    
-    def controle_rele(self,sinalizacao):  #Controle do Relé
-        while sinalizacao == 1:
+    def controle_rele(self,r,d):  #Controle do Relé
+	
+	print 'rele'
+        while True:
+	    sinalizacao = r.get()
+	    if sinalizacao == 1:
 		GPIO.setwarnings(False)
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(self.rele, GPIO.OUT)
 		GPIO.output(self.rele, GPIO.HIGH)
-		#print("Alto")
-		return
+	    else:
+		time.sleep(3)
+		GPIO.cleanup(14)
+		
             
     def tx_rx(self, d, r, s): #Envia e recebe a flag ao mesmo tempo!
         while True:
-
 	    deteccao = d.get()
-	    if  deteccao != 1:
-		s.flag_rx(s,r)
-		
-	    else:
-		s.flag_tx(deteccao)
-		time.sleep(0.24)
-		s.flag_rx(s,r)
-		time.sleep(0.6)
-
-    def leitura(self,d,v):
-        while True:
-            print (d.get())
-            print (v.get())
-            print ('\n')
-            time.sleep(0.25)
-
+	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r))
+	    flagrx.setDaemon(True)
+	    flagrx.start()
+	    
+	    if deteccao == 1:    
+		flagtx = threading.Thread(target = s.flag_tx())
+		flagtx.setDaemon(True)
+		flagtx.start()
+		time.sleep(0.2)
+	    time.sleep(0.2)
+	    
 class Infracao(object):  #Controle de Infração
     def __init__(self):
             print 'Infracao'
@@ -174,7 +177,7 @@ class Infracao(object):  #Controle de Infração
             self.vr = 40
             global vm
 
-    def cont_infracao(self,v,f,c,q):
+    def cont_infracao(self,v,pay):
         while True:
             vm = v.get()
 	    
@@ -191,10 +194,9 @@ class Infracao(object):  #Controle de Infração
             else:
                 vc = vm
 
-            if(vc > self.vr):
-                img = f.captura(c)
-
-
+            #if(vc > self.vr):
+              #  captura.start()
+	    
             vinte = int (self.vr + ((20*40)/100))	
             cinquenta = int (self.vr + ((50*40)/100))
 
@@ -213,14 +215,11 @@ class Infracao(object):  #Controle de Infração
                 infracao = 0
                 self.penalidade = False
             time.sleep(1)
-            lista = [vm, vc, self.vr, infracao, self.penalidade, img]
-
-            #THREAD Servidor
-            maestro = threading.Thread(target= q.dados(self,lista))
-            maestro.setDaemon(True)
-            #maestro.start()
-	    
-
+	    lista = [vm, vc, self.vr, infracao, self.penalidade]
+	    print(lista)
+	    time.sleep(1)
+	    pay.put(lista)
+	    #servidor.start()
 class Camera(object):
     def __init__(self):
         path = 'Banco_de_Imagens/'
@@ -236,16 +235,18 @@ class Camera(object):
         while True:
             cap = cv2.VideoCapture('rtsp://admin:radarpi2@10.0.0.100:554')    
             c.put(cap)
+	    print 'stream'
     
     def captura(self,c):
         cap = c.get()
         ret, frame = cap.read()
         now = datetime.now()
         hora = str(now.hour)+':'+str(now.minute)+':'+str(now.second)+':'+str(now.microsecond)
-        img = cv2.imwrite(path+data+hora+'.jpg', frame)
+        imagem = cv2.imwrite(path+data+hora+'.jpg', frame)
         print("Horário Infração: ", hora)
         print("Velocidade Infração: ", vel)
-        return img
+        img.put(imagem)
+	return
  
 class Servidor(object):
     def __init__(self):
@@ -291,7 +292,7 @@ def main():
     d = Queue(maxsize=0) #deteccao
     r = Queue(maxsize=0) #sinalização
     c = Queue(maxsize=0) #captura
-    p = Queue(maxsize=0) #payload
+    pay = Queue(maxsize=0) #payload
 
     #Simplicação das Classes
     p = Processamentodesinais()
@@ -299,58 +300,46 @@ def main():
     i = Infracao()
     f = Camera()
     q = Servidor
-
-#############PROCESSAMENTO_DE_SINAIS##############    
-
-    #THREAD PROCESSAMENTO DO SINAL
+    
     procsinal = threading.Thread(target=p.proc_sinal, args=(d,v))
-    procsinal.setDaemon(True)				    
+    procsinal.setDaemon(True)
     procsinal.start()
-
-#############SINALIZAÇÃO##############    
- 
-     
-    #THREAD TX E RX NRF24
-    flag = threading.Thread(target= s.tx_rx(d,r,s))
+	
+    flag = threading.Thread(target= s.tx_rx, args = (d,r,s))
     flag.setDaemon(True)
     flag.start()
-    #time.sleep(1)
-    #THREAD RELÉ
-    #rele = threading.Thread(target= s.controle_rele(r))
-    #rele.setDaemon(True)
     
-#############INFRAÇÃO##############    
+    time.sleep(1)
     
-    #cont_infracao(vm,f,c,q)
+    rele = threading.Thread(target = s.controle_rele, args =(r,d))
+    rele.setDaemon(True)
+    rele.start()
     
-
-
-    #Streaming da câmera
-    #stream = threading.Thread(target=f.streaming(c))
+    infracao = threading.Thread(target = i.cont_infracao, args = (v,pay))
+    infracao.setDaemon(True)
+    infracao.start()
+    
+    #stream = threading.Thread(target = f.streaming, args = (c))
     #stream.setDaemon(True)
-
-    #Teste de retorno de flag
-    #p2 = threading.Thread(target = s.leitura, args=(d,v))
-    #p2.setDaemon(True)
+    #stream.start()
     
-    #Start Threads
-     #Processamento de sinais
-    #time.sleep(0.1)
-        #Tx_RX
-    #time.sleep(0.1)
-    #rele.start()   #Sinalização
-    #time.sleep(0.1)
-    #stream.start()  #Câmera streaming
-    #time.sleep(0.1)
-    #p2.start()  #Leitura de dados
+    #capture = threading.Thread(target = f.captura, args = (c))
+    #capture.setDaemon(True)
+    #capture.start()
+    
+	
 
+    print 'Procsinall'
+    time.sleep(0.5)
+    
     while True:
-        pass
+	pass
 
+	  
+    
 if __name__ == '__main__':
 	
-    
-    
+       
     #Abertura da função principal
     main()
 
