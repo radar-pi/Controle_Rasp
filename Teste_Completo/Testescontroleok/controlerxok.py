@@ -10,12 +10,14 @@ import sys
 import cv2
 import os
 import base64
-#import queue
+import queue
 import threading
-from threading import Thread
 import datetime
 import json
 import requests
+c=0
+r=0
+
 
 
 #Processamento de sinais
@@ -25,88 +27,107 @@ def proc_sinal():
 #Inicializanrf24_tx
 def inicionrf24tx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
-	NRF24(GPIO, spidev.SpiDev())
-	begin(0, 17)
-	setRetries(15,15)
-	setPayloadSize(32)
-	setChannel(0x60)
+	radio = NRF24(GPIO, spidev.SpiDev())
+	radio.begin(0, 17)
+	radio.setRetries(15,15)
+	radio.setPayloadSize(32)
+	radio.setChannel(0x60)
 
-	setDataRate(NRF24.BR_2MBPS)
-	setPALevel(NRF24.PA_MIN)
-	setAutoAck(True)
-	enableDynamicPayloads()
-	enableAckPayload()
+	radio.setDataRate(NRF24.BR_2MBPS)
+	radio.setPALevel(NRF24.PA_MIN)
+	radio.setAutoAck(True)
+	radio.enableDynamicPayloads()
+	radio.enableAckPayload()
 
 
-	openWritingPipe(pipes[1])
-	openReadingPipe(1, pipes[0])
-	printDetails()
+	radio.openWritingPipe(pipes[1])
+	radio.openReadingPipe(1, pipes[0])
+	radio.printDetails()
+	return radio
 
 def inicionrf24rx():
 	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
-	NRF24(GPIO, spidev.SpiDev())
-	begin(0, 17)
+	radio2 = NRF24(GPIO, spidev.SpiDev())
+	radio2.begin(0, 17)
 
-	setRetries(15,15)
+	radio2.setRetries(15,15)
 
-	setPayloadSize(32)
-	setChannel(0x60)
-	setDataRate(NRF24.BR_2MBPS)
-	setPALevel(NRF24.PA_MIN)
+	radio2.setPayloadSize(32)
+	radio2.setChannel(0x60)
+	radio2.setDataRate(NRF24.BR_2MBPS)
+	radio2.setPALevel(NRF24.PA_MIN)
 
-	setAutoAck(True)
-	enableDynamicPayloads()
-	enableAckPayload()
+	radio2.setAutoAck(True)
+	radio2.enableDynamicPayloads()
+	radio2.enableAckPayload()
 
-	openWritingPipe(pipes[0])
-	openReadingPipe(1, pipes[1])
+	radio2.openWritingPipe(pipes[0])
+	radio2.openReadingPipe(1, pipes[1])
 
-	startListening()
-	stopListening()
+	radio2.startListening()
+	radio2.stopListening()
 
-	printDetails()
+	radio2.printDetails()
 
-	startListening()
-	r_r = 0
-	r_c = 0
-	rx = [r_r,r_c]
-	return rx
+	radio2.startListening()
+	return radio2
+
 #Transmissão de Flag
-def flag_tx(deteccao):
-    buf = [deteccao]
-    write(buf)
-    if isAckPayloadAvailable():
-        pl_buffer=[]
-        read(pl_buffer, getDynamicPayloadSize())
-        print ("Enviado:", buf) 
-        print ("Retorno:", pl_buffer)
-        print("\n")
-    else:
-        print ("Sem conexão: 0")
-    time.sleep(0.5)
+def flag_tx(radio, c_tx, deteccao):
+	
+	print("Transmitindo")
+	c = c_tx
+	flag = [deteccao] 
+	inicio = time.time()
+	radio.write(flag)
+	if radio.isAckPayloadAvailable():
+		mensagem=[]
+		radio.read(mensagem, radio.getDynamicPayloadSize())
+		fim = time.time()
+		print ("Enviado:", flag) 
+		print ("Retorno:", mensagem)
+		print ("Tempo:", fim-inicio)
+		print("\n")
+	else:
+		
+		print ("Sem conexão!")
+	time.sleep(1)
+	return r
 
 #Recepção de Flag
-def flag_rx(rx):
-    rx[0] = r_r
-    rx[1] = r_c
-    akpl_buf = [r_r]
-    pipe = [0]
-    while not available(pipe):
-       r_c = r_c + 1
-       time.sleep(0.5)
-       if r_c > 2:
-          print("Sem conexão")
-          r_c = 0
-    r_c = 0
-    recv_buffer = []
-    read(recv_buffer, getDynamicPayloadSize())
-    print ("Recebido:", recv_buffer)
-    writeAckPayload(1, akpl_buf, len(akpl_buf))
-    print ("Retorna:", akpl_buf)
-    print ("\n")
-    r_r = r_r + 1
-    return recv_buffer
+def flag_rx(radio2):
+	global c
+	global r
+	while True:
+	#print("Recebendo")
+	#c = c_rx
+	#r = r_rx
+	#r = r + 1
+		print (c,r)
+		akpl_buf = [r]
+		pipe = [0]
+		while not radio2.available(pipe):
+			c = c + 1
+			if c > 2:
+			# print("Sem conexão!")
+				c = 0
+				time.sleep(0.1)
+			#print(pipe)
+		c = 0
+		recv_buffer = []
+		radio2.read(recv_buffer, radio2.getDynamicPayloadSize())
+		print ("Recebido:", recv_buffer)
+		if recv_buffer == [1]:
+			sinalizacao = 1
+		else:
+			sinalizacao = 0
+		print("Sinalizacao:", sinalizacao)
+		radio2.writeAckPayload(1, akpl_buf, len(akpl_buf))
+		print ("Retorna:", akpl_buf)
+		print ("\n")
+		r = r + 1
+	time.sleep(2)
 
 #Controle do Relé
 def controle_rele():
@@ -237,5 +258,26 @@ def envia_arquivo():
 		r.raise_for_status()
 	return r.status_code 
 
-r_c = 0
-r_r = 0
+#radio = inicionrf24tx()
+radio2 = inicionrf24rx()
+i = 0
+c_tx = 0
+#while True:
+
+	
+	#deteccao = random.randint(0,1)
+	#print("Detecção:", deteccao)
+t_rx = threading.Thread(target=flag_rx(radio2))
+#t_rx = threading.Thread(target=flag_rx, args=(radio2, c_rx, deteccao))
+
+
+#if deteccao == 1:
+t_rx.start()
+#	t_rx.start()
+#	i = i+1
+	#print(i)
+#else:
+#	t_rx.start()
+time.sleep(2)
+
+
