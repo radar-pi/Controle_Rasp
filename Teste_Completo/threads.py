@@ -27,8 +27,8 @@ class Processamentodesinais(object):
             #deteccao = random.randrange(0,2)
             deteccao = 1
 	    if deteccao == 1:
-                    #vm = random.randint(58,62)
-		    vm = input('Velocidade:' )
+                    vm = random.randint(58,62)
+		    #vm = input('Velocidade:' )
 		    d.put(deteccao)
 		    v.put(vm)
 		    #print('Velocidade: ')
@@ -38,7 +38,7 @@ class Processamentodesinais(object):
                     #vm = 0
 		    #d.put(deteccao)
 		    #v.put(vm)
-	    
+	    time.sleep(2)
 class Sinalizacao(object):
     def __init__(self):
             print 'Inicio Sinalização'
@@ -97,7 +97,7 @@ class Sinalizacao(object):
 
     def flag_tx(self): #Transmissão de Flag
 	    while True: 
-		#print 'transmite'
+		print 'transmite'
 		flag = [1] 
 		self.radio.stopListening()
 		self.radio.write(flag)
@@ -115,7 +115,7 @@ class Sinalizacao(object):
     
     def flag_rx(self, s, r): #Recepção de Flag
         while True:
-	    #print ('recebe')
+	    print ('recebe')
             contador = [self.h]
             pipe = [0]
 	    if self.radio2.available(pipe):
@@ -193,7 +193,7 @@ class Infracao(object):  #Controle de Infração
 		vc = vm - 11
 	    else:
 		vc = vm
-	    print (vc)
+	    
 	    if(vc > self.vr):
 		print('Carro infrator')
 		f.captura(c, vc, img1)
@@ -221,6 +221,7 @@ class Infracao(object):  #Controle de Infração
 	    #print 'Chama servidor\n'
 		q.veiculo(pay, lista, img1)
 	    else:
+		
 		print('Velocidade considerada: ', vc)
 		print('Carro abaixo do limite da via')
 		
@@ -252,7 +253,7 @@ class Camera(object):
 	    self.now = datetime.now()
 	    self.hora = str(self.now.hour)+':'+str(self.now.minute)+':'+str(self.now.second)+':'+str(self.now.microsecond)
 	    imagem = cv2.imwrite(self.path+self.data+self.hora+'.jpg', frame)
-	    print('Salva imagem\n',datetime.utcnow())
+	    print('Salva imagem',datetime.utcnow())
 	    print("Horario: ", self.hora)
 	    print("Velocidade", vc)
 	    img1.put(frame)
@@ -290,7 +291,8 @@ class Servidor(object):
         "max_allowed_speed": vr 
     }
 	print('FIM', datetime.utcnow())
-	print (veiculo, '\n')
+	print (veiculo)
+	return
 	
 	
 	#vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
