@@ -1,7 +1,33 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
+try:
+    # For Raspberry Pi
+    import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+except ImportError:
+    try:
+        #For BBBB
+        import Adafruit_BBIO.GPIO as GPIO
+    except ImportError:
+        raise ImportError('Neither RPi.GPIO nor Adafruit_BBIO.GPIO module found.')
 
+# Try to Use spidev (which is faster) and then try Adafruit_BBIO
+try:
+    import spidev
+    ADAFRUID_BBIO_SPI = False
+except:
+    from Adafruit_BBIO.SPI import SPI
+    ADAFRUID_BBIO_SPI = True
+
+
+# Use a monotonic clock if available to avoid unwanted side effects from clock
+# changes
+try:
+    from time import monotonic
+except ImportError:
+    from time import time as monotonic
 
 import sys
 import time
