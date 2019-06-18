@@ -17,6 +17,7 @@ import json
 import requests
 
 
+
 class Processamentodesinais(object):
     def __init__(self):
 		print 'Detecção e Velocidade'
@@ -24,28 +25,27 @@ class Processamentodesinais(object):
     def proc_sinal(self,d,v):
         
         while True:
-            deteccao = random.randrange(0,2)
-            if deteccao == 1:
-                    vm = random.randint(58,62)
-		    d.put(deteccao)
-		    v.put(vm)
-		    time.sleep(0.2)
-		    
-            else:
-                    vm = 0
-		    d.put(deteccao)
-		    v.put(vm)
-		    time.sleep(1)
-	    print (deteccao, vm)
-	    time.sleep(0.5)   
-	    #retorna detecção e velocidade;
-    
+            #deteccao = random.randrange(0,2)
+            deteccao = 1
+	        if deteccao == 1:
+                vm = random.randint(58,62)
+                d.put(deteccao)
+                v.put(vm)
+                #print('Velocidade: ', vm)
+                #print(datetime.utcnow())
+                #print('Deteccao: ', deteccao)
+            #else:
+                #vm = 0
+                #d.put(deteccao)
+                #v.put(vm)
+            time.sleep(2)
+
 class Sinalizacao(object):
     def __init__(self):
-            print 'Inicio Sinalização'
-            global contador
-	    self.h = 0
-            
+        print 'Inicio Sinalização'
+        global contador
+        self.h = 0
+        self.contador = 0
 	    self.rele = 14
 	    GPIO.setwarnings(False)
 	    GPIO.setmode(GPIO.BCM)
@@ -67,7 +67,7 @@ class Sinalizacao(object):
 
 	    self.radio.openWritingPipe(pipes[1])
 	    self.radio.openReadingPipe(1, pipes[0])
-	    #self.radio.printDetails()
+	    self.radio.printDetails()
  
 
 	    self.radio2 = NRF24(GPIO, spidev.SpiDev())
@@ -90,83 +90,91 @@ class Sinalizacao(object):
 	    self.radio2.startListening()
 	    self.radio2.stopListening()
 
-	    #self.radio2.printDetails()
+	    self.radio2.printDetails()
 
 	    self.radio2.startListening()
+
         
 
 
     def flag_tx(self): #Transmissão de Flag
 	    while True: 
-		print 'transmite'
-		flag = [1] 
-		self.radio.stopListening()
-		self.radio.write(flag)
-		if self.radio.isAckPayloadAvailable():
-		    mensagem=[]
-		    self.radio.read(mensagem, self.radio.getDynamicPayloadSize())
-		    print ("Enviado:", flag) 
-		    print("\n")
-		else:
-		    #print ("Sem conexão: 0")
-		    self.radio.startListening()
-		self.radio.startListening()	
-		return
-            
-    
-    def flag_rx(self, s, r): #Recepção de Flag
-        while True:
-	    print 'recebe'
-            self.radio2.startListening()
-	    contador = [self.h]
-            pipe = [0]
-            while not self.radio2.available(pipe):
-                return
-            recebido = []
-            self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
-            print ('Recebido:', recebido)
-            if recebido == [1]:
-                print("Carro detectado!")
-                sinalizacao = 1
+            #print 'transmite'
+            flag = [1] 
+            self.radio.stopListening()
+            self.radio.write(flag)
+            if self.radio.isAckPayloadAvailable():
+                mensagem=[]
+                self.radio.read(mensagem, self.radio.getDynamicPayloadSize())
+                print ("Enviado:", flag) 
+                print("\n")
             else:
-		sinalizacao = 0
-	    r.put(sinalizacao)
-	    self.radio2.writeAckPayload(1, contador, len(contador))
-            print ("Retorna:", contador)
-            print ("\n")
-            self.h = self.h + 1
-	    return
-            
+                #print ("Sem conexão: 0")
+                self.radio.startListening()
+            self.radio.startListening()	
+            return
+                
+    
+    def flag_rx(self, s, r,d, cont): #Recepção de Flag
+        while True:
+	    #print ('recebe')
+	   
+            contador = [self.h]
+            pipe = [0]
+	        if self.radio2.available(pipe):
+                recebido = []
+                self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
+                print ('Recebido:', recebido)
+                if recebido == [1]:
+                    print("Carro detectado!")
+                    sinalizacao = 1
+                    r.put(sinalizacao)
+                    self.contador = self.contador + 1
+                    cont.put(self.contador)
+                    rele = threading.Thread(target = s.controle_rele, args =(r,d, cont))
+                    rele.setDaemon(True)
+                    rele.start()
+                self.radio2.writeAckPayload(1, contador, len(contador))
+                print ("\n")
+                self.h = self.h + 1
+                return
+                
 	    
-    def controle_rele(self,r,d):  #Controle do Relé
+    def controle_rele(self,r,d, cont):  #Controle do Relé
 	
-	print 'rele'
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.rele, GPIO.OUT)
+        GPIO.output(self.rele, GPIO.HIGH)
+        time.sleep(5)
+        print 'passou 5 segundos'
+        cont_depois = cont.get()
+        
+        if self.contador == cont_depois:
+            GPIO.cleanup(self.rele)
+        return
+
+
+	def tx_rx(self, d, r, s, cont, opnrf): #Envia e recebe a flag ao mesmo tempo!
+        
         while True:
-	    sinalizacao = r.get()
-	    if sinalizacao == 1:
-		GPIO.setwarnings(False)
-		GPIO.setmode(GPIO.BCM)
-		GPIO.setup(self.rele, GPIO.OUT)
-		GPIO.output(self.rele, GPIO.HIGH)
-	    else:
-		time.sleep(3)
-		GPIO.cleanup(14)
-		
+            if self.radio2.getCRCLength() == NRF24.CRC_DISABLED:
+                opnrf.put(False)
+            else:
+                opnrf.put(True)
             
-    def tx_rx(self, d, r, s): #Envia e recebe a flag ao mesmo tempo!
-        while True:
-	    deteccao = d.get()
-	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r))
-	    flagrx.setDaemon(True)
-	    flagrx.start()
-	    
-	    if deteccao == 1:    
-		flagtx = threading.Thread(target = s.flag_tx())
-		flagtx.setDaemon(True)
-		flagtx.start()
-		time.sleep(0.2)
-	    time.sleep(0.2)
-	    
+            deteccao = d.get()
+            #print ('tx_rx',deteccao)
+            flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
+            flagrx.setDaemon(True)
+            flagrx.start()
+            
+            if deteccao == 1:    
+                flagtx = threading.Thread(target = s.flag_tx())
+                flagtx.setDaemon(True)
+                flagtx.start()
+                time.sleep(0.2)
+            
 class Infracao(object):  #Controle de Infração
     def __init__(self):
             print 'Infracao'
@@ -174,10 +182,16 @@ class Infracao(object):  #Controle de Infração
             self.vr = 40
             global vm
 
-    def cont_infracao(self,v,pay): #Inserir captura
+    def cont_infracao(self,v, f, c, w, q): #Inserir captura
         while True:
+            #print 'Abre Infracao'
+            #print 'x'
+            #eteccao = d.get()
+            #print (deteccao)
+            #if deteccao == 1:
             vm = v.get()
-	    
+            #print (vm)
+            
             if vm >= 27 and vm <= 107:
                 vc = vm - 7
             elif vm >= 108 and vm <= 121:
@@ -190,120 +204,184 @@ class Infracao(object):  #Controle de Infração
                 vc = vm - 11
             else:
                 vc = vm
+            
+            if(vc > self.vr):
+            #print('Carro infrator')
+                img1 = f.captura(c, vc)
+        
+                vinte = int (self.vr + ((20*40)/100))	
+                cinquenta = int (self.vr + ((50*40)/100))
 
-            #if(vc > self.vr):
-              #  captura.start()
-	    
-            vinte = int (self.vr + ((20*40)/100))	
-            cinquenta = int (self.vr + ((50*40)/100))
+                if  vc >= self.vr and vc <= vinte:
+                    infracao = 1
+                    self.penalidade = True
 
-            if  vc >= self.vr and vc <= vinte:
-                infracao = 1
-                self.penalidade = True
+                elif vc > vinte and vc <= cinquenta:
+                    infracao = 2
+                    self.penalidade = True
 
-            elif vc > vinte and vc <= cinquenta:
-                infracao = 2
-                self.penalidade = True
-
-            elif vc > cinquenta:
-                infracao = 3
-                self.penalidade = True
+                elif vc > cinquenta:
+                    infracao = 3
+                    self.penalidade = True
+                
+                lista = [vm, vc, self.vr, infracao, self.penalidade, img1]
+                #print(lista)
+                #pay.put(lista)
+                #print 'Chama servidor\n'
+                #q.veiculo(pay, lista, img1)
+                w.processaimg(lista,q)
             else:
-                infracao = 0
-                self.penalidade = False
-            time.sleep(1)
-	    lista = [vm, vc, self.vr, infracao, self.penalidade]
-	    print(lista)
-	    time.sleep(1)
-	    pay.put(lista)
-	    #servidor.start()
-
+                a = 0
+                #print('Velocidade considerada: ', vc)
+                print('Carro abaixo do limite da via')
+            
 class Camera(object):
     def __init__(self):
-        path = 'Banco_de_Imagens/'
-        now = datetime.now()
-        data = str(now.day)+'_'+str(now.month)+'_'+str(now.year)+'/'
+        self.path = 'Banco_de_Imagens/'
+        self.now = datetime.now()
+        self.data = str(self.now.day)+'_'+str(self.now.month)+'_'+str(self.now.year)+'/'
         dirfailed = 512 #caso nao consiga criar diretorio
         
-        if os.system('cd '+ path + data) == dirfailed:
-		    os.system('mkdir '+ path + data)
-		    os.system('cd '+ path + data)
+        if os.system('cd '+ self.path + self.data) == dirfailed:
+		    os.system('mkdir '+ self.path + self.data)
+		    os.system('cd '+ self.path + self.data)
 
-    def streaming(self, c):
+    def streaming(self, c, opcam):
         while True:
-            cap = cv2.VideoCapture('rtsp://admin:radarpi2@10.0.0.100:554')
-            # isOpened	()
-            # Returns true if video capturing has been initialized already.
-            c.put(cap)
-	    print 'stream'
-    
-    def captura(self, c, img1): 
-        cap = c.get()
-        ret, frame = cap.read()
-        now = datetime.now()
-        hora = str(now.hour)+':'+str(now.minute)+':'+str(now.second)+':'+str(now.microsecond)
-        imagem = cv2.imwrite(path+data+hora+'.jpg', frame)
-        print("Horário Infração: ", hora)
-        print("Velocidade Infração: ", vel)
-        img1.put(imagem)
-	return
+	    #print 'Roda câmera\n'
+	    cap = cv2.VideoCapture('rtsp://admin:radarpi2@10.0.0.100:554')
+	    opcam.put(cap.isOpened())
+	    # Returns true if video capturing has been initialized already.
+        c.put(cap)
 
-#class Processamentodeimagem(object)
-    # def __init__(self):
-    #Passar parâmetro carro
-    #carro.start()
+    
+    def captura(self, c, vc): 
+	    #print 'Faz a captura\n'
+	    cap = c.get()
+	    ret, frame = cap.read()
+	    self.now = datetime.now()
+	    self.hora = str(self.now.hour)+':'+str(self.now.minute)+':'+str(self.now.second)+':'+str(self.now.microsecond)
+	    imagem = cv2.imwrite(self.path+self.data+self.hora+'.jpg', frame)
+	    #print('Salva imagem',datetime.utcnow())
+	    #print("Horario: ", self.hora)
+	    #print("Velocidade", vc)
+	    return frame
+
+class Processamentodeimagem(object)
+     def __init__(self):
+         
+        self.GH = 100 # horizontal gradient 
+        self.GV = 100 # vertical gradient
+
+        #kernel for morphological tophat
+        self.kernel_th = cv2.getStructuringElement(cv2.MORPH_RECT,(20,20))#need adjustment
+        #kernel for morphological opening
+        self.kernel_o = cv2.getStructuringElement(cv2.MORPH_RECT,(27,6))#need adjustment
+        #kernel for morphological closing
+        self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(27,6))#need adjustment
+
+    def processaimg(self, lista,q):
+
+        #first load and grayscale
+        #path = lista[5]
+        path = "16:2:57:27968.jpg"
+        img_origin = cv2.imread(path)
+        img_op = img_origin
+        img_op = cv2.cvtColor(img_op, cv2.COLOR_BGR2GRAY)
+        #print(img_op.shape)
+        cv2.imwrite("img_op.jpg",img_op)
+       # img_op = cv2.blur(img_op,(3,3))
+
+        # morphological top-hat
+        img_op = cv2.morphologyEx(img_op, cv2.MORPH_TOPHAT, self.kernel_th)
+       # cv2.imwrite('img_op.jpg',img_op)
+
+        #Binarization with OTSU method
+        ret2,thr = cv2.threshold(img_op,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        #cv2.imwrite('thr.jpg',thr) 
+
+        #Opening --> closing
+        opening = cv2.morphologyEx(thr, cv2.MORPH_OPEN, self.kernel_o)
+        op_cl = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, self.kernel_c)
+        #cv2.imwrite('op_cl.jpg',op_cl)
+
+        IMG = cv2.Canny(op_cl,self.GH,self.GV)
+        contours, hierarchy = cv2.findContours(op_cl, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_L1 )
+        cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
+        cv2.imwrite('img_origin.jpg',img_origin)
+        #imagem2 = img2.put(img_origin)
+        lista[6] = img_origin
+        q.veiculo(lista)
+	           
+
 
 class Servidor(object):
     def __init__(self):
-	print 'Servidor'
+	print 'Servidor\n'
         global vr
         global penalidade
         self.id_radar = 2019
+	    self.x = 0
 
-    def veiculo(self, pay, img1, img2):
-        lista = pay.get()
-
-        vm = lista[0]
+    def veiculo(self, lista): 
+        #print 'Abre o Servidor\n'
+	    vm = lista[0]
         vc = lista[1]
         vr = lista[2]
         infracao = lista[3]
         penalidade = lista[4]
-        img1 = img1.get()
-        img2 = img2.get()
+        img1 = base64.b64encode(lista[5])
+        img2 = base64.b64encode(lista[6])
         
-        veiculo = {
-        "id_radar": id_radar,
+    	veiculo = {
+        "id_radar": self.id_radar,
         "infraction": infracao,
-        "image1": img1,
-        "image2": img2,
+        #"image1": img1,
+        #"image2": img2,
         "vehicle_speed": vm,
         "considered_speed": vc,
         "max_allowed_speed": vr 
-    }
+         }
+	    #print('FIM', datetime.utcnow())
+	    #print (veiculo)
+	    return
+	
+	
+	#vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
     
-    #vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
-    
-    def operacionalidade(self):
+    def operacionalidade(self, opcam, opusrp, opnrf):
         
-        camera = opcam.get()
-        rasp = opras.get()
-        usrp = opusrp.get()
-        
-        if (usrp and rasp and camera) == 1:
-            func_geral = True
-        else:
-            func_geral = False
-        
-        
-        operacionalidade = {
-        "radar_id": id_radar,
-        "camera": camera,
-        "rasp": raspberry,
-        "usrp": usrp,
-        "radar": func_geral
-    }
+        while True:
+            
+            camera = opcam.get()
+            nrf = opnrf.get()
+            #usrp = opusrp.get()
+            
+            # if (usrp and nrf and camera ) == 1:
+                #    func_geral = True
+            #else:
+                #    func_geral = False
 
-    #status_radar_msg.send_status_radar(operacionalidade)
+            operacionalidade = {
+            "radar_id": self.id_radar,
+            "camera": camera,
+            "nrf24": nrf
+            #"usrp": usrp,
+            #"radar": func_geral
+            }
+
+            if (camera and nrf == True) and (self.x == 0) == True:
+                #status_radar_msg.send_status_radar(operacionalidade)
+                x = 1
+
+            if (camera and nrf == False):
+                if nrf == False
+                    print 'NRF desconectado'
+                if camera == False
+                    print 'Camera desconectada'
+                x = 0
+                #status_radar_msg.send_status_radar(operacionalidade)
+                      
 
 def main():
  
@@ -312,52 +390,40 @@ def main():
     d = Queue(maxsize=0) #deteccao
     r = Queue(maxsize=0) #sinalização
     c = Queue(maxsize=0) #captura
-    pay = Queue(maxsize=0) #payload
-    img1 = Queue(maxsize=0) #Imagem original
-    img2 = Queue(maxsize=0) #Imagem processada
     opcam = Queue(maxsize=0) #Operacionalidade câmera
-    opras = Queue(maxsize=0) #Operacionalidade Raspberry Pi
-    opusr = Queue(maxsize=0) #Operacionalidade USRP 
-
+    opusrp = Queue(maxsize=0) #Operacionalidade USRP 
+    opnrf = Queue(maxsize=0) #Operacionalidade NRF
+    cont  = Queue(maxsize=0) #Contador pra iluminação
+    
     #Simplicação das Classes
     p = Processamentodesinais()
     s = Sinalizacao()
     i = Infracao()
     f = Camera()
     q = Servidor()
+    w = Processamentodeimagem()
     
-    procsinal = threading.Thread(target=p.proc_sinal, args=(d,v))
+    procsinal = threading.Thread(target = p.proc_sinal, args=(d,v))
     procsinal.setDaemon(True)
     procsinal.start()
-	
-    flag = threading.Thread(target= s.tx_rx, args = (d,r,s))
+    
+    flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
     flag.setDaemon(True)
     flag.start()
     
-    time.sleep(1)
+    time.sleep(0.2)
     
-    rele = threading.Thread(target = s.controle_rele, args =(r,d))
-    rele.setDaemon(True)
-    rele.start()
-    
-
-    #stream = threading.Thread(target = f.streaming, args = (c))
-    #stream.setDaemon(True)
-    #stream.start()
-    
-    #capture = threading.Thread(target = f.captura, args = (c, img1, carro))
-    #capture.setDaemon(True)
-    
-    infracao = threading.Thread(target = i.cont_infracao, args = (v,pay)) #Adicionar captura
+    infracao = threading.Thread(target = i.cont_infracao, args = (v, f, c, w, q)) 
     infracao.setDaemon(True)
-    infracao.start()
+    infracao.start()                                   
     
-    #carro = threading.Thread(target = q.veiculo, args = (pay, img1, img2))
-    #carro.setDaemon(True) 
+    stream = threading.Thread(target = f.streaming, args = (c,opcam))
+    stream.setDaemon(True)
+    stream.start()
     
-    #operacao = threading.Thread(target = q.operacionalidade, args = (opcamp, opras, opusr)
-    #operacao.setDaemon(True)
-    #operacao.start()
+    opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusr, opnrf))
+    opera.setDaemon(True)
+    opera.start()
       
     while True:
 	    pass
