@@ -13,31 +13,30 @@ import base64
 from Queue import Queue
 import threading
 from datetime import datetime
-import json
-import requests
-
+import vehicle_flagrant_msg
+import status_radar_msg
 
 
 class Processamentodesinais(object):
     def __init__(self):
-		print 'Detecção e Velocidade'
+	print 'Detecção e Velocidade'
     
     def proc_sinal(self,d,v):
         
         while True:
             #deteccao = random.randrange(0,2)
             deteccao = 1
-	        if deteccao == 1:
-                vm = random.randint(58,62)
-                d.put(deteccao)
-                v.put(vm)
-                #print('Velocidade: ', vm)
-                #print(datetime.utcnow())
-                #print('Deteccao: ', deteccao)
-            #else:
-                #vm = 0
-                #d.put(deteccao)
-                #v.put(vm)
+	    if deteccao == 1:
+		vm = random.randint(58,62)
+		d.put(deteccao)
+		v.put(vm)
+	    #print('Velocidade: ', vm)
+	    #print(datetime.utcnow())
+	    #print('Deteccao: ', deteccao)
+	#else:
+	    #vm = 0
+	    #d.put(deteccao)
+	    #v.put(vm)
             time.sleep(2)
 
 class Sinalizacao(object):
@@ -46,59 +45,59 @@ class Sinalizacao(object):
         global contador
         self.h = 0
         self.contador = 0
-	    self.rele = 14
-	    GPIO.setwarnings(False)
-	    GPIO.setmode(GPIO.BCM)
-	    GPIO.setup(self.rele, GPIO.OUT)
-	    GPIO.cleanup(self.rele)
-	    
-	    pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
-	    self.radio = NRF24(GPIO, spidev.SpiDev())
-	    self.radio.begin(0, 22)
-	    self.radio.setRetries(15,15)
-	    self.radio.setPayloadSize(32)
-	    self.radio.setChannel(0x60)
+	self.rele = 14
+	GPIO.setwarnings(False)
+	GPIO.setmode(GPIO.BCM)
+	GPIO.setup(self.rele, GPIO.OUT)
+	GPIO.cleanup(self.rele)
+	
+	pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
+	self.radio = NRF24(GPIO, spidev.SpiDev())
+	self.radio.begin(0, 22)
+	self.radio.setRetries(15,15)
+	self.radio.setPayloadSize(32)
+	self.radio.setChannel(0x60)
 
-	    self.radio.setDataRate(NRF24.BR_2MBPS)
-	    self.radio.setPALevel(NRF24.PA_MIN)
-	    self.radio.setAutoAck(True)
-	    self.radio.enableDynamicPayloads()
-	    self.radio.enableAckPayload()
+	self.radio.setDataRate(NRF24.BR_2MBPS)
+	self.radio.setPALevel(NRF24.PA_MIN)
+	self.radio.setAutoAck(True)
+	self.radio.enableDynamicPayloads()
+	self.radio.enableAckPayload()
 
-	    self.radio.openWritingPipe(pipes[1])
-	    self.radio.openReadingPipe(1, pipes[0])
-	    self.radio.printDetails()
- 
+	self.radio.openWritingPipe(pipes[1])
+	self.radio.openReadingPipe(1, pipes[0])
+	self.radio.printDetails()
 
-	    self.radio2 = NRF24(GPIO, spidev.SpiDev())
-	    self.radio2.begin(0, 22)
 
-	    self.radio2.setRetries(15,15)
+	self.radio2 = NRF24(GPIO, spidev.SpiDev())
+	self.radio2.begin(0, 22)
 
-	    self.radio2.setPayloadSize(32)
-	    self.radio2.setChannel(0x60)
-	    self.radio2.setDataRate(NRF24.BR_2MBPS)
-	    self.radio2.setPALevel(NRF24.PA_MIN)
+	self.radio2.setRetries(15,15)
 
-	    self.radio2.setAutoAck(True)
-	    self.radio2.enableDynamicPayloads()
-	    self.radio2.enableAckPayload()
+	self.radio2.setPayloadSize(32)
+	self.radio2.setChannel(0x60)
+	self.radio2.setDataRate(NRF24.BR_2MBPS)
+	self.radio2.setPALevel(NRF24.PA_MIN)
 
-	    self.radio2.openWritingPipe(pipes[0])
-	    self.radio2.openReadingPipe(1, pipes[1])
+	self.radio2.setAutoAck(True)
+	self.radio2.enableDynamicPayloads()
+	self.radio2.enableAckPayload()
 
-	    self.radio2.startListening()
-	    self.radio2.stopListening()
+	self.radio2.openWritingPipe(pipes[0])
+	self.radio2.openReadingPipe(1, pipes[1])
 
-	    self.radio2.printDetails()
+	self.radio2.startListening()
+	self.radio2.stopListening()
 
-	    self.radio2.startListening()
+	self.radio2.printDetails()
+
+	self.radio2.startListening()
 
         
 
 
     def flag_tx(self): #Transmissão de Flag
-	    while True: 
+	while True: 
             #print 'transmite'
             flag = [1] 
             self.radio.stopListening()
@@ -121,59 +120,58 @@ class Sinalizacao(object):
 	   
             contador = [self.h]
             pipe = [0]
-	        if self.radio2.available(pipe):
-                recebido = []
-                self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
-                print ('Recebido:', recebido)
-                if recebido == [1]:
-                    print("Carro detectado!")
-                    sinalizacao = 1
-                    r.put(sinalizacao)
-                    self.contador = self.contador + 1
-                    cont.put(self.contador)
-                    rele = threading.Thread(target = s.controle_rele, args =(r,d, cont))
-                    rele.setDaemon(True)
-                    rele.start()
-                self.radio2.writeAckPayload(1, contador, len(contador))
-                print ("\n")
-                self.h = self.h + 1
-                return
-                
+	    if self.radio2.available(pipe):
+		recebido = []
+		self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
+		if recebido == [1]:
+		    print("Carro detectado!")
+		    sinalizacao = 1
+		    r.put(sinalizacao)
+		    self.contador = self.contador + 1
+		    cont.put(self.contador)
+		    rele = threading.Thread(target = s.controle_rele, args =(r,d, cont))
+		    rele.setDaemon(True)
+		    rele.start()
+		self.radio2.writeAckPayload(1, contador, len(contador))
+		print ("\n")
+		self.h = self.h + 1
+	    return
 	    
+	
     def controle_rele(self,r,d, cont):  #Controle do Relé
 	
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.rele, GPIO.OUT)
-        GPIO.output(self.rele, GPIO.HIGH)
+        GPIO.output(self.rele, GPIO.LOW)
         time.sleep(5)
         print 'passou 5 segundos'
         cont_depois = cont.get()
         
         if self.contador == cont_depois:
-            GPIO.cleanup(self.rele)
+            GPIO.output(self.rele, GPIO.HIGH)
         return
 
 
-	def tx_rx(self, d, r, s, cont, opnrf): #Envia e recebe a flag ao mesmo tempo!
+    def tx_rx(self, d, r, s, cont, opnrf): #Envia e recebe a flag ao mesmo tempo!
         
-        while True:
-            if self.radio2.getCRCLength() == NRF24.CRC_DISABLED:
-                opnrf.put(False)
-            else:
-                opnrf.put(True)
-            
-            deteccao = d.get()
-            #print ('tx_rx',deteccao)
-            flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
-            flagrx.setDaemon(True)
-            flagrx.start()
-            
-            if deteccao == 1:    
-                flagtx = threading.Thread(target = s.flag_tx())
-                flagtx.setDaemon(True)
-                flagtx.start()
-                time.sleep(0.2)
+	while True:
+	    if self.radio2.getCRCLength() == NRF24.CRC_DISABLED:
+		opnrf.put(False)
+	    else:
+		opnrf.put(True)
+	    
+	    deteccao = d.get()
+	    #print ('tx_rx',deteccao)
+	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
+	    flagrx.setDaemon(True)
+	    flagrx.start()
+	    
+	    if deteccao == 1:    
+		flagtx = threading.Thread(target = s.flag_tx())
+		flagtx.setDaemon(True)
+		flagtx.start()
+		time.sleep(0.2)
             
 class Infracao(object):  #Controle de Infração
     def __init__(self):
@@ -224,12 +222,12 @@ class Infracao(object):  #Controle de Infração
                     infracao = 3
                     self.penalidade = True
                 
-                lista = [vm, vc, self.vr, infracao, self.penalidade, img1]
+                lista = [vm, vc, self.vr, infracao, self.penalidade]
                 #print(lista)
                 #pay.put(lista)
                 #print 'Chama servidor\n'
                 #q.veiculo(pay, lista, img1)
-                w.processaimg(lista,q)
+                w.processaimg(lista,q, img1)
             else:
                 a = 0
                 #print('Velocidade considerada: ', vc)
@@ -267,8 +265,8 @@ class Camera(object):
 	    #print("Velocidade", vc)
 	    return frame
 
-class Processamentodeimagem(object)
-     def __init__(self):
+class Processamentodeimagem(object):
+    def __init__(self):
          
         self.GH = 100 # horizontal gradient 
         self.GV = 100 # vertical gradient
@@ -280,7 +278,7 @@ class Processamentodeimagem(object)
         #kernel for morphological closing
         self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(27,6))#need adjustment
 
-    def processaimg(self, lista,q):
+    def processaimg(self, lista,q, img1):
 
         #first load and grayscale
         #path = lista[5]
@@ -293,11 +291,11 @@ class Processamentodeimagem(object)
        # img_op = cv2.blur(img_op,(3,3))
 
         # morphological top-hat
-        img_op = cv2.morphologyEx(img_op, cv2.MORPH_TOPHAT, self.kernel_th)
+        img_op1 = cv2.morphologyEx(img_op, cv2.MORPH_TOPHAT, self.kernel_th)
        # cv2.imwrite('img_op.jpg',img_op)
 
         #Binarization with OTSU method
-        ret2,thr = cv2.threshold(img_op,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        ret2,thr = cv2.threshold(img_op1,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
         #cv2.imwrite('thr.jpg',thr) 
 
         #Opening --> closing
@@ -310,6 +308,7 @@ class Processamentodeimagem(object)
         cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
         cv2.imwrite('img_origin.jpg',img_origin)
         #imagem2 = img2.put(img_origin)
+	lista[5] = img_op
         lista[6] = img_origin
         q.veiculo(lista)
 	           
@@ -321,11 +320,11 @@ class Servidor(object):
         global vr
         global penalidade
         self.id_radar = 2019
-	    self.x = 0
+	self.x = 0
 
     def veiculo(self, lista): 
         #print 'Abre o Servidor\n'
-	    vm = lista[0]
+	vm = lista[0]
         vc = lista[1]
         vr = lista[2]
         infracao = lista[3]
@@ -344,7 +343,7 @@ class Servidor(object):
          }
 	    #print('FIM', datetime.utcnow())
 	    #print (veiculo)
-	    return
+	return
 	
 	
 	#vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
@@ -375,14 +374,28 @@ class Servidor(object):
                 x = 1
 
             if (camera and nrf == False):
-                if nrf == False
+                if nrf == False:
                     print 'NRF desconectado'
-                if camera == False
+                if camera == False:
                     print 'Camera desconectada'
                 x = 0
                 #status_radar_msg.send_status_radar(operacionalidade)
-                      
 
+class Cooler(object):
+    def __init__(self):
+	self.rele1 = 15
+	GPIO.cleanup(self.rele1)
+    	GPIO.setwarnings(False)
+	GPIO.setmode(GPIO.BCM)
+	GPIO.setup(self.rele1, GPIO.OUT)
+	
+    def cooler(self):
+	now = datetime.now()
+	if now.hour >= 18 and now.hour <7:
+	    GPIO.output(self.rele1, GPIO.HIGH)
+	else:
+	    GPIO.output(self.rele1, GPIO.LOW)
+	
 def main():
  
     #Variáveis que compartilham Threads
@@ -402,6 +415,7 @@ def main():
     f = Camera()
     q = Servidor()
     w = Processamentodeimagem()
+    j = Cooler()
     
     procsinal = threading.Thread(target = p.proc_sinal, args=(d,v))
     procsinal.setDaemon(True)
@@ -421,10 +435,14 @@ def main():
     stream.setDaemon(True)
     stream.start()
     
-    opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusr, opnrf))
+    opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusrp, opnrf))
     opera.setDaemon(True)
     opera.start()
-      
+
+    cooler = threading.Thread(target = j.cooler, args = [])
+    cooler.setDaemon(True)
+    cooler.start()
+    
     while True:
 	    pass
 
