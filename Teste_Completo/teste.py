@@ -19,7 +19,7 @@ import status_radar_msg
 
 class Processamentodesinais(object):
     def __init__(self):
-	print 'Detecção e Velocidade'
+	print ('Detecção e Velocidade')
     
     
     def proc_sinal(self,d,v):
@@ -44,7 +44,7 @@ class Processamentodesinais(object):
 	    
 class Sinalizacao(object):
     def __init__(self):
-        print 'Inicio Sinalização'
+        print ('Inicio Sinalização')
         global contador
         self.h = 0
         self.contador = 0
@@ -101,7 +101,7 @@ class Sinalizacao(object):
 
     def flag_tx(self): #Transmissão de Flag
 	while True: 
-            print 'transmite'
+            print ('transmite')
             flag = [1] 
             self.radio.stopListening()
             self.radio.write(flag)
@@ -148,7 +148,7 @@ class Sinalizacao(object):
         GPIO.setup(self.rele, GPIO.OUT)
         GPIO.output(self.rele, GPIO.LOW)
         time.sleep(5)
-        print 'passou 5 segundos'
+        print ('passou 5 segundos')
         cont_depois = cont.get()
         
         if self.contador == cont_depois:
@@ -178,14 +178,14 @@ class Sinalizacao(object):
             
 class Infracao(object):  #Controle de Infração
     def __init__(self):
-            print 'Infracao'
+            print ('Infracao')
             self.penalidade = 0
             self.vr = 40
             global vm
 
     def cont_infracao(self,v, f, c, w, q): #Inserir captura
         while True:
-            print 'Abre Infracao'
+            #print 'Abre Infracao'
             #print 'x'
             #eteccao = d.get()
             #print (deteccao)
@@ -208,8 +208,9 @@ class Infracao(object):  #Controle de Infração
             
             if(vc > self.vr):
 		print('Carro infrator')
-                img1 = f.captura(c, vc)
-        
+                #img1 = f.captura(c, vc)
+		img1 = cv2.imread('teste.jpg')
+
                 vinte = int (self.vr + ((20*40)/100))	
                 cinquenta = int (self.vr + ((50*40)/100))
 
@@ -257,7 +258,7 @@ class Camera(object):
 	    time.sleep(2)
     
     def captura(self, c, vc): 
-	    print 'Faz a captura\n'
+	    print ('Faz a captura\n')
 	    cap = c.get()
 	    ret, frame = cap.read()
 	    self.now = datetime.now()
@@ -310,14 +311,17 @@ class Processamentodeimagem(object):
         #cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
         cv2.imwrite('img_origin.jpg',img_origin)
         
-	#imagem2 = img2.put(img_origin)
-	q.veiculo(lista, img_origin, img_op)
-	           
+
+	img_op = img_origin
+	
+	servidor = threading.Thread(target = q.veiculo, args=(lista, img_origin, img_op))
+	servidor.setDaemon(True)
+	servidor.start()
 
 
 class Servidor(object):
     def __init__(self):
-	print 'Servidor\n'
+	print ('Servidor\n')
         global vr
         global penalidade
         self.id_radar = 2019
@@ -333,18 +337,30 @@ class Servidor(object):
         img1 = base64.b64encode(img_origin)
         img2 = base64.b64encode(img_op)
         #"image1": 
-    	veiculo = {
-        "id_radar": self.id_radar,
-        "infraction": infracao,
-        "image1": img1,
-        "image2": img2,
-        "vehicle_speed": vm,
-        "considered_speed": vc,
-        "max_allowed_speed": vr 
-         }
-	print 'inicio'
-	#vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
-        print 'fim'
+	print (vm, infracao, vc,vr)
+	#'''	
+    	#veiculo = {
+        #"id_radar": self.id_radar,
+        #"infraction": infracao,
+        #"image1": img1,
+        #"image2": img2,
+        #"vehicle_speed": vm,
+        #"considered_speed": vc,
+        #"max_allowed_speed": vr 
+        # }
+	 
+        veiculo = {
+	"id_radar": 2019,
+	"infraction": 2,
+	"image1": img1,
+	"image2": img2,
+	"vehicle_speed": 40,
+	"considered_speed": 50,
+	"max_allowed_speed": 20 
+	}
+	print ('inicio')
+	vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
+        print ('fim')
 	#print('FIM', datetime.utcnow())
 	#print (veiculo)
 	return
@@ -385,19 +401,12 @@ class Servidor(object):
 	    "status_uspr": False,
 	    "status_radar": False
 	}
-	print 'inicio'    
+	print ('inicio')    
 	status_radar_msg.send_status_radar(status)
-	print 'fim'
+	print ('fim')
 	time.sleep(1000)
 
-	if (camera and nrf == False):
-	    if nrf == False:
-		print 'NRF desconectado'
-	    if camera == False:
-		print 'Camera desconectada'
-	    x = 0
-	#status_radar_msg.send_status_radar(dado_operacionalidade)
-
+	
 class Cooler(object):
     def __init__(self):
 	self.rele1 = 14
@@ -442,9 +451,9 @@ def main():
     procsinal.setDaemon(True)
     procsinal.start()
     
-    flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
-    flag.setDaemon(True)
-    flag.start()
+    #flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
+    #flag.setDaemon(True)
+    #flag.start()
     
     time.sleep(0.2)
     
@@ -452,9 +461,9 @@ def main():
     infracao.setDaemon(True)
     infracao.start()                                   
     
-    stream = threading.Thread(target = f.streaming, args = (c,opcam))
-    stream.setDaemon(True)
-    stream.start()
+    #stream = threading.Thread(target = f.streaming, args = (c,opcam))
+    #stream.setDaemon(True)
+    #stream.start()
     
     opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusrp, opnrf))
     opera.setDaemon(True)

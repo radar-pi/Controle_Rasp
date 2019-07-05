@@ -5,14 +5,14 @@ import pika
 import sys
 import uuid
 import datetime
-print '1'
+
 EXCHANGE = 'message'
 EXCHANGE_TYPE = 'topic'
 QUEUE = 'maestro'
 ROUTING_KEY = 'message.maestro'
 HOST = 'www.radop.ml'
 
-
+print '5'
 def _generate_id():
     identifier = str(uuid.uuid4())
     return identifier
@@ -22,7 +22,7 @@ def _get_time():
     time = datetime.datetime.utcnow()
     time = str(time.isoformat('T') + 'Z')
     return time
-
+print '10'
 
 def send_vehicle_flagrant(dict_msg=None):
     connection = pika.BlockingConnection(
@@ -30,7 +30,7 @@ def send_vehicle_flagrant(dict_msg=None):
     main_channel = connection.channel()
 
     main_channel.exchange_declare(exchange=EXCHANGE, exchange_type=EXCHANGE_TYPE)
-
+    print '15'
     msg = {
         "type": "vehicle-flagrant",
         "id": _generate_id(),
@@ -45,7 +45,7 @@ def send_vehicle_flagrant(dict_msg=None):
             "max_allowed_speed": dict_msg['max_allowed_speed']
         }
     }
-
+    
     main_channel.basic_publish(
         exchange=EXCHANGE,
         routing_key=ROUTING_KEY,
