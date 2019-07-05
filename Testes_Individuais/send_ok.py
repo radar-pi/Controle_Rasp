@@ -14,7 +14,7 @@ import sys
 pipes = [[0xe7, 0xe7, 0xe7, 0xe7, 0xe7], [0xc2, 0xc2, 0xc2, 0xc2, 0xc2]]
 
 radio = NRF24(GPIO, spidev.SpiDev())
-radio.begin(0, 17)
+radio.begin(0, 22)
 time.sleep(1)
 radio.setRetries(15,15)
 radio.setPayloadSize(16)
@@ -33,8 +33,7 @@ radio.printDetails()
 
 c=0
 while True:
-   
-    x = random.randrange(0,2)
+    x = input('Deteccao = ')
     buf = [x] 
     inicio = time.time()
     radio.write(buf)
@@ -49,4 +48,3 @@ while True:
     else:
         print ("Sem conexão: 0")
     time.sleep(0.5)
-

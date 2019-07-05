@@ -1,33 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-try:
-    # For Raspberry Pi
-    import RPi.GPIO as GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-except ImportError:
-    try:
-        #For BBBB
-        import Adafruit_BBIO.GPIO as GPIO
-    except ImportError:
-        raise ImportError('Neither RPi.GPIO nor Adafruit_BBIO.GPIO module found.')
-
-# Try to Use spidev (which is faster) and then try Adafruit_BBIO
-try:
-    import spidev
-    ADAFRUID_BBIO_SPI = False
-except:
-    from Adafruit_BBIO.SPI import SPI
-    ADAFRUID_BBIO_SPI = True
 
 
-# Use a monotonic clock if available to avoid unwanted side effects from clock
-# changes
-try:
-    from time import monotonic
-except ImportError:
-    from time import time as monotonic
+# This file lib_nrf24.py is a slightly tweaked version of Barraca's "pynrf24".
+
+# So this is my tweak for Raspberry Pi and "Virtual GPIO" ...
+#       ... of Barraca's port to BeagleBone python ...  (Joao Paulo Barraca <jpbarraca@gmail.com>)
+#                ... of maniacbug's NRF24L01 C++ library for Arduino.
+# Brian Lavery Oct 2014
+
+
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+
 
 import sys
 import time
