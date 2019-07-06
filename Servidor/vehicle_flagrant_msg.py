@@ -10,7 +10,7 @@ EXCHANGE = 'message'
 EXCHANGE_TYPE = 'topic'
 QUEUE = 'maestro'
 ROUTING_KEY = 'message.maestro'
-HOST = 'www.radop.ml'
+HOST = 'localhost'
 
 print '5'
 def _generate_id():
