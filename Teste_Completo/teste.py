@@ -208,8 +208,8 @@ class Infracao(object):  #Controle de Infração
             
             if(vc > self.vr):
 		print('Carro infrator')
-                #img1 = f.captura(c, vc)
-		img1 = cv2.imread('teste.jpg')
+                img1 = f.captura(c, vc)
+		#img1 = cv2.imread('teste.jpg')
 
                 vinte = int (self.vr + ((20*40)/100))	
                 cinquenta = int (self.vr + ((50*40)/100))
@@ -358,9 +358,9 @@ class Servidor(object):
 	"considered_speed": 50,
 	"max_allowed_speed": 20 
 	}
-	print ('inicio')
+	print ('inicioflagrante')
 	vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
-        print ('fim')
+        print ('fimflagrante')
 	#print('FIM', datetime.utcnow())
 	#print (veiculo)
 	return
@@ -461,9 +461,9 @@ def main():
     infracao.setDaemon(True)
     infracao.start()                                   
     
-    #stream = threading.Thread(target = f.streaming, args = (c,opcam))
-    #stream.setDaemon(True)
-    #stream.start()
+    stream = threading.Thread(target = f.streaming, args = (c,opcam))
+    stream.setDaemon(True)
+    stream.start()
     
     opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusrp, opnrf))
     opera.setDaemon(True)
