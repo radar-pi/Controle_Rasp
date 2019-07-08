@@ -94,9 +94,10 @@ class Sinalizacao(object):
         
 
     def flag_tx(self): #Transmite flag
-	    time.sleep(0.05)
-	    print "Trasmitindo"
-	    time.sleep(0.05)
+	    
+	    #time.sleep(0.05)
+	    #print "Trasmitindo"
+	    #time.sleep(0.05)
 	    flag = [1]
             self.radio.stopListening()
             self.radio.write(flag)
@@ -110,10 +111,12 @@ class Sinalizacao(object):
             return 
     
     def flag_rx(self, s, r,d, cont): #Recepção de Flag
-        while True:
-	    time.sleep(0.05)
-	    print ('Recebendo')
-	    time.sleep(0.05)
+        
+	while True:
+	    
+	    #time.sleep(0.05)
+	    #print ('Recebendo')
+	    #time.sleep(0.05)
 	    
             contador = [self.h]
             pipe = [0]
@@ -169,7 +172,7 @@ class Sinalizacao(object):
 	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
 	    flagrx.setDaemon(True)
 	    flagrx.start()
-	    time.sleep(0.1)
+	    time.sleep(0.25)
 
 	    
 class Infracao(object):  #Controle de Infração
@@ -198,10 +201,14 @@ class Infracao(object):  #Controle de Infração
                 vc = vm
             
             if(vc > self.vr):
+		time.sleep(0.05)
 		print('Carro infrator')
-                img1 = f.captura(opcam, vm)
+                time.sleep(0.05)
 		
-                vinte = int (self.vr + ((20*40)/100))	
+		#img1 = f.captura(opcam, vm)
+		
+		img1 = cv2.imread("/home/pi/Documents/Controle_Rasp/Teste_Completo/teste.jpg")
+		vinte = int (self.vr + ((20*40)/100))	
                 cinquenta = int (self.vr + ((50*40)/100))
 
                 if  vc >= self.vr and vc <= vinte:
@@ -235,7 +242,7 @@ class Camera(object):
 		    os.system('mkdir '+ self.path + self.data)
 		    os.system('cd '+ self.path + self.data)
 	
-    def captura(self, opcam):
+    def captura(self, opcam,vm):
 	    tempo = self.distancia/(vm/3.6)
 	    #time.sleep(tempo)
 	    cap = cv2.VideoCapture('rtsp://admin:radarpi2@172.20.10.6:554')
@@ -256,11 +263,11 @@ class Processamentodeimagem(object):
         self.GV = 100 # vertical gradient
 
         #kernel for morphological tophat
-        self.kernel_th = cv2.getStructuringElement(cv2.MORPH_RECT,(20,20))#need adjustment
+        self.kernel_th = cv2.getStructuringElement(cv2.MORPH_RECT,(23,23))#need adjustment
         #kernel for morphological opening
-        self.kernel_o = cv2.getStructuringElement(cv2.MORPH_RECT,(27,6))#need adjustment
+        self.kernel_o = cv2.getStructuringElement(cv2.MORPH_RECT,(23,8))#need adjustment
         #kernel for morphological closing
-        self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(27,6))#need adjustment
+        self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(23,8S))#need adjustment
 
     def processaimg(self, lista,q, img1):
 
@@ -269,7 +276,7 @@ class Processamentodeimagem(object):
         img_op = img_origin
         
 	img_op = cv2.cvtColor(img_op, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite("/Imagens/img_op.jpg",img_op)
+        cv2.imwrite("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_op.jpg",img_op)
         #img_op = cv2.blur(img_op,(3,3))
 
         # morphological top-hat
@@ -286,14 +293,20 @@ class Processamentodeimagem(object):
         #cv2.imwrite('op_cl.jpg',op_cl)
 
         IMG = cv2.Canny(op_cl,self.GH,self.GV)
-        #contours, hierarchy = cv2.findContours(op_cl, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_L1 )
-        #cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
-        cv2.imwrite('/Imagens/img_origin.jpg',img_origin)
-       	img_op = img_origin
+        _ , contours, _ = cv2.findContours(op_cl, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_L1 )
+        cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
+        cv2.imwrite('/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_origin.jpg',img_origin)
+       	
 	
-	servidor = threading.Thread(target = q.veiculo, args=(lista))
+	vm = lista[0]
+        vc = lista[1]
+        vr = lista[2]
+        infracao = lista[3]
+	
+	servidor = threading.Thread(target = q.veiculo,  args=(vm,vc,vr,infracao))
 	servidor.setDaemon(True)
 	servidor.start()
+	return
 	
 class Servidor(object):
     def __init__(self):
@@ -303,24 +316,19 @@ class Servidor(object):
         self.id_radar = 2019
 	self.x = 0
 
-    def veiculo(self, lista, img_origin, img_op): 
-        #print 'Abre o Servidor\n'
-	vm = lista[0]
-        vc = lista[1]
-        vr = lista[2]
-        infracao = lista[3]
-	
-	os.system("jpegoptim --size=400k img_op.jpg")
-	os.system("jpegoptim --size=400k img_origin.jpg")
+    def veiculo(self, vm,vc,vr,infracao): 
+        print 'Abre o Servidor\n'
+
+	os.system("jpegoptim --size=300k /home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_op.jpg")
+	os.system("jpegoptim --size=300k /home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_origin.jpg")
         
-	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/teste.jpg", "rb") as img_file:
+	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_op.jpg", "rb") as img_file:
 	    img1 = base64.b64encode(img_file.read())
 	
-	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/teste.jpg", "rb") as img_file:
+	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/img_origin.jpg", "rb") as img_file:
 	    img2 = base64.b64encode(img_file.read())
 	
-	print (vm, infracao, vc,vr)
-	
+
 	#'''	
     	#veiculo = {
         #"id_radar": self.id_radar,
@@ -333,45 +341,62 @@ class Servidor(object):
         # }
 	 
         veiculo = {
-	    "id_radar": 2019,
-	    "infraction": 2,
+	    "id_radar": self.id_radar,
+	    "infraction": infracao,
 	    "image1": img1,
 	    "image2": img2,
-	    "vehicle_speed": 40,
-	    "considered_speed": 50,
-	    "max_allowed_speed": 20 
+	    "vehicle_speed": vm,
+	    "considered_speed": vc,
+	    "max_allowed_speed": vr 
 	    }
+	
 	print ('inicioflagrante')
 	vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
         print ('fimflagrante')
 	
     def operacionalidade(self, opcam, opusrp, opnrf):
         
-	camera = opcam.get()
-	nrf= opnrf.get()
-	opusrp = False
-	func_geral = False
-	dado_operacionalidade = {
-	    "radar_id": self.id_radar,
-	    "status_camera": camera,
-	    "status_rasp": nrf,
-	    "status_uspr": opusrp,
-	    "status_radar": func_geral
-	}
-	
-	status = {
-	    "radar_id": 4,
-	    "status_camera": True,
-	    "status_rasp": True,
-	    "status_uspr": False,
-	    "status_radar": False
-	}
-	print ('inicioopera')    
-	status_radar_msg.send_status_radar(dado_operacionalidade)
-	print ('fimopera')
-	time.sleep(60)
+	while True:
+	    
+	    #camera = opcam.get()
+	    camera = False
+	    nrf= opnrf.get()
+	    opusrp = False
+	    func_geral = False
+	    x = True
+	    
+	    if (nrf and camera and x) == True: 
+	    
+		dado_operacionalidade = {
+		    "radar_id": self.id_radar,
+		    "status_camera": camera,
+		    "status_rasp": nrf,
+		    "status_uspr": opusrp,
+		    "status_radar": func_geral
+		}
+		
+		print ('inicioopera')    
+		status_radar_msg.send_status_radar(dado_operacionalidade)
+		print ('fimopera')
+		time.sleep(300)
+	    
+	    else:
+		
+		dado_operacionalidade = {
+		    "radar_id": self.id_radar,
+		    "status_camera": camera,
+		    "status_rasp": nrf,
+		    "status_uspr": opusrp,
+		    "status_radar": func_geral
+		}
+	    
+		print ('inicioopera')    
+		status_radar_msg.send_status_radar(dado_operacionalidade)
+		print ('fimopera')
+		time.sleep(10)
+	    
+	   
 
-	
 class Cooler(object):
     def __init__(self):
 	self.rele1 = 14
@@ -412,10 +437,13 @@ def main():
     procsinal = threading.Thread(target = p.proc_sinal, args=(d,v))
     procsinal.setDaemon(True)
     procsinal.start()
+    
     time.sleep(0.1)
+    
     flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
     flag.setDaemon(True)
     flag.start()
+    
     time.sleep(0.1)
     
     infracao = threading.Thread(target = i.cont_infracao, args = (v, f, opcam, w, q)) 
