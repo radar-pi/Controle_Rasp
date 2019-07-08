@@ -178,7 +178,7 @@ class Sinalizacao(object):
 class Infracao(object):  #Controle de Infração
     
     def __init__(self):
-            self.vr = 40
+            self.vr = 12
             global vm
 	    
     def cont_infracao(self,v, f, opcam, w, q):
@@ -205,9 +205,9 @@ class Infracao(object):  #Controle de Infração
 		print('Carro infrator')
                 time.sleep(0.05)
 		
-		#img1 = f.captura(opcam, vm)
+		img1 = f.captura(opcam, vm)
 		
-		img1 = cv2.imread("/home/pi/Documents/Controle_Rasp/Teste_Completo/teste.jpg")
+		#img1 = cv2.imread("/home/pi/Documents/Controle_Rasp/Teste_Completo/teste.jpg")
 		vinte = int (self.vr + ((20*40)/100))	
                 cinquenta = int (self.vr + ((50*40)/100))
 
@@ -232,7 +232,7 @@ class Infracao(object):  #Controle de Infração
 class Camera(object):
     
     def __init__(self):
-        self.distancia = 12
+        self.distancia = 10
 	self.path = 'Banco_de_Imagens/'
         self.now = datetime.now()
         self.data = str(self.now.day)+'_'+str(self.now.month)+'_'+str(self.now.year)+'/'
@@ -244,8 +244,11 @@ class Camera(object):
 	
     def captura(self, opcam,vm):
 	    tempo = self.distancia/(vm/3.6)
-	    #time.sleep(tempo)
+	    time.sleep(tempo)
+	    inicio = time.time()
 	    cap = cv2.VideoCapture('rtsp://admin:radarpi2@172.20.10.6:554')
+	    fim = time.time()
+	    print (fim - inicio)
 	    opcam.put(cap.isOpened())
 	    print ('Faz a captura')
 	    
@@ -267,7 +270,7 @@ class Processamentodeimagem(object):
         #kernel for morphological opening
         self.kernel_o = cv2.getStructuringElement(cv2.MORPH_RECT,(23,8))#need adjustment
         #kernel for morphological closing
-        self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(23,8S))#need adjustment
+        self.kernel_c = cv2.getStructuringElement(cv2.MORPH_RECT,(23,8))#need adjustment
 
     def processaimg(self, lista,q, img1):
 
@@ -393,7 +396,7 @@ class Servidor(object):
 		print ('inicioopera')    
 		status_radar_msg.send_status_radar(dado_operacionalidade)
 		print ('fimopera')
-		time.sleep(10)
+		time.sleep(100)
 	    
 	   
 
