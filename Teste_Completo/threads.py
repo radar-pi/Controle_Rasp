@@ -21,21 +21,21 @@ class Processamentodesinais(object):
     
     def __init__(self):
 	self.vm = 0
-    
+	print ("Proc_Sinais")
+	
     def proc_sinal(self,d,v):
         
         while True:
             #vm = random.randint(58,62)
-	    input = ("Velocidade: ")
+	    
+	    vm = input()
 	    deteccao = 1
 	    
 	    d.put(deteccao)
 	    v.put(vm)
 	    print('Velocidade: ', vm)
 	    
-	    deteccao = 0
-	    d.put(deteccao)
-            
+	                  
 class Sinalizacao(object):
     
     def __init__(self):
@@ -93,11 +93,11 @@ class Sinalizacao(object):
 
         
 
-    def flag_tx(self): #Transmissão de Flag
-	
-	while True: 
-            print ('Transmitindo')
-            flag = [1] 
+    def flag_tx(self): #Transmite flag
+	    time.sleep(0.05)
+	    print "Trasmitindo"
+	    time.sleep(0.05)
+	    flag = [1]
             self.radio.stopListening()
             self.radio.write(flag)
             if self.radio.isAckPayloadAvailable():
@@ -107,21 +107,24 @@ class Sinalizacao(object):
                 #print ("Sem conexão: 0")
                 self.radio.startListening()
 	    self.radio.startListening()	
-            return
-                
+            return 
     
     def flag_rx(self, s, r,d, cont): #Recepção de Flag
         while True:
+	    time.sleep(0.05)
 	    print ('Recebendo')
-	   
+	    time.sleep(0.05)
+	    
             contador = [self.h]
             pipe = [0]
 	    if self.radio2.available(pipe):
 		recebido = []
 		self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
 		if recebido == [1]:
-		    print("Carro detectado!")
-		    sinalizacao = 1
+		    time.sleep(0.05)
+	    	    print("Carro detectado!")
+		    time.sleep(0.05)
+	    	    sinalizacao = 1
 		    r.put(sinalizacao)
 		    self.contador = self.contador + 1
 		    cont.put(self.contador)
@@ -130,6 +133,13 @@ class Sinalizacao(object):
 		    rele.start()
 		self.radio2.writeAckPayload(1, contador, len(contador))
 		self.h = self.h + 1
+		time.sleep(0.1)
+	    deteccao = d.get()
+	    
+	    if deteccao == 1:
+		s.flag_tx()
+		deteccao = 0
+		d.put(deteccao)
 	    return
 	    
 	
@@ -150,22 +160,18 @@ class Sinalizacao(object):
     def tx_rx(self, d, r, s, cont, opnrf): #Envia e recebe a flag ao mesmo tempo!
         
 	while True:
+
 	    if self.radio2.getCRCLength() == NRF24.CRC_DISABLED:
 		opnrf.put(False)
 	    else:
 		opnrf.put(True)
 	    
-	    deteccao = d.get()
 	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
 	    flagrx.setDaemon(True)
 	    flagrx.start()
+	    time.sleep(0.1)
+
 	    
-	    if deteccao == 1:    
-		flagtx = threading.Thread(target = s.flag_tx())
-		flagtx.setDaemon(True)
-		flagtx.start()
-		time.sleep(0.2)
-            
 class Infracao(object):  #Controle de Infração
     
     def __init__(self):
@@ -212,8 +218,10 @@ class Infracao(object):  #Controle de Infração
 		w.processaimg(lista, q, img1)
             
 	    else:
-                print('Carro abaixo do limite da via')
-            
+                time.sleep(0.05)
+	    	print('Carro abaixo do limite da via')
+		time.sleep(0.05)
+	    
 class Camera(object):
     
     def __init__(self):
@@ -261,7 +269,7 @@ class Processamentodeimagem(object):
         img_op = img_origin
         
 	img_op = cv2.cvtColor(img_op, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite("img_op.jpg",img_op)
+        cv2.imwrite("/Imagens/img_op.jpg",img_op)
         #img_op = cv2.blur(img_op,(3,3))
 
         # morphological top-hat
@@ -280,14 +288,13 @@ class Processamentodeimagem(object):
         IMG = cv2.Canny(op_cl,self.GH,self.GV)
         #contours, hierarchy = cv2.findContours(op_cl, cv2.RETR_LIST, cv2.CHAIN_APPROX_TC89_L1 )
         #cv2.drawContours(img_origin, contours, -1, (0,255,0), 3)
-        cv2.imwrite('img_origin.jpg',img_origin)
+        cv2.imwrite('/Imagens/img_origin.jpg',img_origin)
        	img_op = img_origin
 	
 	servidor = threading.Thread(target = q.veiculo, args=(lista))
 	servidor.setDaemon(True)
 	servidor.start()
-
-
+	
 class Servidor(object):
     def __init__(self):
 	print ('Servidor\n')
@@ -302,13 +309,17 @@ class Servidor(object):
         vc = lista[1]
         vr = lista[2]
         infracao = lista[3]
-	path = "/pi/home/Docu
+	
 	os.system("jpegoptim --size=400k img_op.jpg")
 	os.system("jpegoptim --size=400k img_origin.jpg")
-        img1 = cv2.imread()
-        img1 = base64.b64encode(img_origin)
-        img2 = base64.b64encode(img_op)
-        print (vm, infracao, vc,vr)
+        
+	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/teste.jpg", "rb") as img_file:
+	    img1 = base64.b64encode(img_file.read())
+	
+	with open("/home/pi/Documents/Controle_Rasp/Teste_Completo/Imagens/teste.jpg", "rb") as img_file:
+	    img2 = base64.b64encode(img_file.read())
+	
+	print (vm, infracao, vc,vr)
 	
 	#'''	
     	#veiculo = {
@@ -333,7 +344,6 @@ class Servidor(object):
 	print ('inicioflagrante')
 	vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
         print ('fimflagrante')
-	return
 	
     def operacionalidade(self, opcam, opusrp, opnrf):
         
@@ -356,9 +366,9 @@ class Servidor(object):
 	    "status_uspr": False,
 	    "status_radar": False
 	}
-	print ('inicio')    
+	print ('inicioopera')    
 	status_radar_msg.send_status_radar(dado_operacionalidade)
-	print ('fim')
+	print ('fimopera')
 	time.sleep(60)
 
 	
@@ -373,12 +383,9 @@ class Cooler(object):
 	
     def cooler(self):
 	now = datetime.now()
-	print (now.hour)
 	if now.hour >= 7 and now.hour <=18:
 	    GPIO.output(self.rele1, GPIO.LOW)
-	    #print ('Alto')
 	else:
-	    #print ('Baixo')
 	    GPIO.output(self.rele1, GPIO.HIGH)
 	
 def main():
@@ -401,23 +408,19 @@ def main():
     w = Processamentodeimagem()
     j = Cooler()
     
+    #Threads
     procsinal = threading.Thread(target = p.proc_sinal, args=(d,v))
     procsinal.setDaemon(True)
     procsinal.start()
+    time.sleep(0.1)
+    flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
+    flag.setDaemon(True)
+    flag.start()
+    time.sleep(0.1)
     
-    #flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
-    #flag.setDaemon(True)
-    #flag.start()
-    
-    time.sleep(0.2)
-    
-    infracao = threading.Thread(target = i.cont_infracao, args = (v, f, c, w, q)) 
+    infracao = threading.Thread(target = i.cont_infracao, args = (v, f, opcam, w, q)) 
     infracao.setDaemon(True)
     infracao.start()                                   
-    
-    stream = threading.Thread(target = f.streaming, args = (c,opcam))
-    stream.setDaemon(True)
-    stream.start()
     
     opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusrp, opnrf))
     opera.setDaemon(True)
@@ -428,7 +431,7 @@ def main():
     cooler.start()
     
     while True:
-	    pass
+	pass
 
 
 if __name__ == '__main__':
