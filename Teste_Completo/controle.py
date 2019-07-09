@@ -112,39 +112,38 @@ class Sinalizacao(object):
     
     def flag_rx(self, s, r,d, cont): #Recepção de Flag
         
-	while True:
 	    
-	    #time.sleep(0.05)
-	    #print ('Recebendo')
-	    #time.sleep(0.05)
+	#time.sleep(0.05)
+	#print ('Recebendo')
+	#time.sleep(0.05)
 	    
-            contador = [self.h]
-            pipe = [0]
-	    if self.radio2.available(pipe):
-		recebido = []
-		self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
-		if recebido == [1]:
-		    time.sleep(0.05)
-	    	    print("Carro detectado!")
-		    time.sleep(0.05)
-	    	    sinalizacao = 1
-		    r.put(sinalizacao)
-		    self.contador = self.contador + 1
-		    cont.put(self.contador)
-		    rele = threading.Thread(target = s.controle_rele, args =(r,d, cont))
-		    rele.setDaemon(True)
-		    rele.start()
-		self.radio2.writeAckPayload(1, contador, len(contador))
-		self.h = self.h + 1
-		time.sleep(0.1)
-	    deteccao = d.get()
-	    
-	    if deteccao == 1:
-		s.flag_tx()
-		deteccao = 0
-		d.put(deteccao)
-	    return
-	    
+	contador = [self.h]
+	pipe = [0]
+	if self.radio2.available(pipe):
+	    recebido = []
+	    self.radio2.read(recebido, self.radio2.getDynamicPayloadSize())
+	    if recebido == [1]:
+		time.sleep(0.05)
+		print("Carro detectado!")
+		time.sleep(0.05)
+		sinalizacao = 1
+		r.put(sinalizacao)
+		self.contador = self.contador + 1
+		cont.put(self.contador)
+		rele = threading.Thread(target = s.controle_rele, args =(r,d, cont)) #Thread relé
+		rele.setDaemon(True)
+		rele.start()
+	    self.radio2.writeAckPayload(1, contador, len(contador))
+	    self.h = self.h + 1
+	    time.sleep(0.1)
+	deteccao = d.get()
+	
+	if deteccao == 1:
+	    s.flag_tx() #Chama função transmissão
+	    deteccao = 0
+	    d.put(deteccao)
+	return
+	
 	
     def controle_rele(self,r,d, cont):  #Controle do Relé
 	
@@ -169,16 +168,16 @@ class Sinalizacao(object):
 	    else:
 		opnrf.put(True)
 	    
-	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont))
+	    flagrx = threading.Thread(target = s.flag_rx, args = (s,r,d, cont)) #Thread  modo receber
 	    flagrx.setDaemon(True)
 	    flagrx.start()
-	    time.sleep(0.25)
+	    time.sleep(0.1)
 
 	    
 class Infracao(object):  #Controle de Infração
     
     def __init__(self):
-            self.vr = 12
+            self.vr = 10 #Velocidade regulamentada
             global vm
 	    
     def cont_infracao(self,v, f, opcam, w, q):
@@ -207,7 +206,6 @@ class Infracao(object):  #Controle de Infração
 		
 		img1 = f.captura(opcam, vm)
 		
-		#img1 = cv2.imread("/home/pi/Documents/Controle_Rasp/Teste_Completo/teste.jpg")
 		vinte = int (self.vr + ((20*40)/100))	
                 cinquenta = int (self.vr + ((50*40)/100))
 
@@ -232,7 +230,7 @@ class Infracao(object):  #Controle de Infração
 class Camera(object):
     
     def __init__(self):
-        self.distancia = 10
+        self.distancia = 12
 	self.path = 'Banco_de_Imagens/'
         self.now = datetime.now()
         self.data = str(self.now.day)+'_'+str(self.now.month)+'_'+str(self.now.year)+'/'
@@ -306,7 +304,7 @@ class Processamentodeimagem(object):
         vr = lista[2]
         infracao = lista[3]
 	
-	servidor = threading.Thread(target = q.veiculo,  args=(vm,vc,vr,infracao))
+	servidor = threading.Thread(target = q.veiculo,  args=(vm,vc,vr,infracao)) #Thread Servidor
 	servidor.setDaemon(True)
 	servidor.start()
 	return
@@ -332,18 +330,7 @@ class Servidor(object):
 	    img2 = base64.b64encode(img_file.read())
 	
 
-	#'''	
-    	#veiculo = {
-        #"id_radar": self.id_radar,
-        #"infraction": infracao,
-        #"image1": img1,
-        #"image2": img2,
-        #"vehicle_speed": vm,
-        #"considered_speed": vc,
-        #"max_allowed_speed": vr 
-        # }
-	 
-        veiculo = {
+	veiculo = {
 	    "id_radar": self.id_radar,
 	    "infraction": infracao,
 	    "image1": img1,
@@ -353,16 +340,15 @@ class Servidor(object):
 	    "max_allowed_speed": vr 
 	    }
 	
-	print ('inicioflagrante')
+	print ('Envia servidor')
 	vehicle_flagrant_msg.send_vehicle_flagrant(veiculo)
-        print ('fimflagrante')
+        print ('Finaliza servidor')
 	
     def operacionalidade(self, opcam, opusrp, opnrf):
         
 	while True:
 	    
-	    #camera = opcam.get()
-	    camera = False
+	    camera = opcam.get()
 	    nrf= opnrf.get()
 	    opusrp = False
 	    func_geral = False
@@ -400,7 +386,7 @@ class Servidor(object):
 	    
 	   
 
-class Cooler(object):
+class Cooler(object): #Controle do Cooler
     def __init__(self):
 	self.rele1 = 14
 	GPIO.cleanup(self.rele1)
@@ -437,26 +423,31 @@ def main():
     j = Cooler()
     
     #Threads
+    #Processamento de Sinais
     procsinal = threading.Thread(target = p.proc_sinal, args=(d,v))
     procsinal.setDaemon(True)
     procsinal.start()
     
     time.sleep(0.1)
     
+    #Sistema de SInalização
     flag = threading.Thread(target= s.tx_rx, args = (d,r,s, cont, opnrf))
     flag.setDaemon(True)
     flag.start()
     
     time.sleep(0.1)
     
+    #Infração, Captura e Servidor
     infracao = threading.Thread(target = i.cont_infracao, args = (v, f, opcam, w, q)) 
     infracao.setDaemon(True)
     infracao.start()                                   
     
+    #Operacionalidade
     opera = threading.Thread(target = q.operacionalidade, args = (opcam, opusrp, opnrf))
     opera.setDaemon(True)
     opera.start()
-
+    
+    #Controle do Cooler
     cooler = threading.Thread(target = j.cooler, args = [])
     cooler.setDaemon(True)
     cooler.start()
